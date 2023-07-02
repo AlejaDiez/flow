@@ -3,7 +3,7 @@ package syntax;
 /**
  * Class representing a token.
  */
-public final class Token<T> {
+public final class Token {
     /**
      * Type of the token.
      */
@@ -11,7 +11,7 @@ public final class Token<T> {
     /**
      * Value of the token.
      */
-    private final T _value;
+    private final Object _value;
     /**
      * Line number where the token is found.
      */
@@ -29,11 +29,11 @@ public final class Token<T> {
      * @param line   The line number where the token is found.
      * @param column The column number where the token is found.
      */
-    public Token(Type type, T value, int line, int column) {
+    public Token(Type type, Object value, int line, int column) {
         _type = type;
         _value = value;
-        _line = line;
-        _column = column;
+        _line = line + 1; // Human readable line number
+        _column = column + 1; // Human readable column number
     }
 
     /**
@@ -50,7 +50,7 @@ public final class Token<T> {
      *
      * @return The value of the token.
      */
-    public T getValue() {
+    public Object getValue() {
         return _value;
     }
 
