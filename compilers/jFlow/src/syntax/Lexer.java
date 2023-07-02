@@ -1,5 +1,10 @@
 package syntax;
 
+import java.util.List;
+import java.util.LinkedList;
+
+import utils.Colors;
+
 final class Lexer {
     /**
      * The input string to be tokenized.
@@ -13,6 +18,10 @@ final class Lexer {
      * The current character in the input string.
      */
     private char _character;
+    /**
+     * The list of diagnostics.
+     */
+    private List<String> _diagnostics;
 
     /**
      * Constructor for Lexer class.
@@ -23,6 +32,11 @@ final class Lexer {
         _input = input;
         _position = 0;
         _character = _input.length() > 0 ? _input.charAt(_position) : '\0';
+        _diagnostics = new LinkedList<String>();
+
+        if (input.length() == 0) {
+            _diagnostics.add(Colors.red("ERROR:") + " Input string cannot be empty.");
+        }
     }
 
     /**
@@ -38,7 +52,7 @@ final class Lexer {
      * 
      * @return The token representing the number.
      */
-    private Token<Integer> _analyzeNumber() {
+    private Token _analyzeNumber() {
         final Token.Type type = Token.Type.NUMBER;
         String value = "";
         final int line = 0;
@@ -48,7 +62,12 @@ final class Lexer {
             value += _character;
             _advance();
         }
-        return new Token<Integer>(type, Integer.parseInt(value), line, column);
+        try {
+            return new Token(type, Integer.parseInt(value), line, column);
+        } catch (NumberFormatException e) {
+            _diagnostics.add(Colors.red("ERROR:") + " Invalid number '" + value + "' at line " + line + ", column " + column + ".");
+            return new Token(Token.Type.UNKNOWN, value, line, column);
+        }
     }
 
     /**
@@ -56,14 +75,14 @@ final class Lexer {
      * 
      * @return The token representing the plus operator.
      */
-    private Token<Character> _analyzePlusOperator() {
+    private Token _analyzePlusOperator() {
         final Token.Type type = Token.Type.PLUS;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -71,14 +90,14 @@ final class Lexer {
      * 
      * @return The token representing the minus operator.
      */
-    private Token<Character> _analyzeMinusOperator() {
+    private Token _analyzeMinusOperator() {
         final Token.Type type = Token.Type.MINUS;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -86,14 +105,14 @@ final class Lexer {
      * 
      * @return The token representing the multiply operator.
      */
-    private Token<Character> _analyzeMultiplyOperator() {
+    private Token _analyzeMultiplyOperator() {
         final Token.Type type = Token.Type.MULTIPLY;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -101,14 +120,14 @@ final class Lexer {
      * 
      * @return The token representing the divide operator.
      */
-    private Token<Character> _analyzeDivideOperator() {
+    private Token _analyzeDivideOperator() {
         final Token.Type type = Token.Type.DIVIDE;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -116,14 +135,14 @@ final class Lexer {
      * 
      * @return The token representing the left parenthesis.
      */
-    private Token<Character> _analyzeLeftParenthesis() {
+    private Token _analyzeLeftParenthesis() {
         final Token.Type type = Token.Type.LPAREN;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -131,14 +150,14 @@ final class Lexer {
      * 
      * @return The token representing the right parenthesis.
      */
-    private Token<Character> _analyzeRightParenthesis() {
+    private Token _analyzeRightParenthesis() {
         final Token.Type type = Token.Type.RPAREN;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -146,7 +165,7 @@ final class Lexer {
      * 
      * @return The token representing the whitespace.
      */
-    private Token<String> _analyzeWhitespace() {
+    private Token _analyzeWhitespace() {
         final Token.Type type = Token.Type.WHITESPACE;
         String value = "";
         final int line = 0;
@@ -156,7 +175,7 @@ final class Lexer {
             value += _character;
             _advance();
         }
-        return new Token<String>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -164,14 +183,14 @@ final class Lexer {
      * 
      * @return The token representing the end of file.
      */
-    private Token<Character> _analyzeEndOfFile() {
+    private Token _analyzeEndOfFile() {
         final Token.Type type = Token.Type.EOF;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -179,14 +198,15 @@ final class Lexer {
      * 
      * @return The token representing the unknown character.
      */
-    private Token<Character> _analyzeUnknownCharacter() {
+    private Token _analyzeUnknownCharacter() {
         final Token.Type type = Token.Type.UNKNOWN;
         final char value = _character;
         final int line = 0;
         final int column = _position;
 
+        _diagnostics.add(Colors.red("ERROR:") + " unknown character '" + value + "' at line " + line + ", column " + column + ".");
         _advance();
-        return new Token<Character>(type, value, line, column);
+        return new Token(type, value, line, column);
     }
 
     /**
@@ -194,7 +214,7 @@ final class Lexer {
      *
      * @return The next token in the input string.
      */
-    public Token<?> nextToken() {
+    public Token nextToken() {
         if (Token.Type.NUMBER.equals(_character)) {
             return _analyzeNumber();
         } else if (Token.Type.PLUS.equals(_character)) {
@@ -225,5 +245,14 @@ final class Lexer {
      */
     public boolean hasNext() {
         return _position <= _input.length();
+    }
+
+    /**
+     * Get a copy of the diagnostics.
+     *
+     * @return A copy of the diagnostics.
+     */
+    public List<String> getDiagnostics() {
+        return new LinkedList<String>(_diagnostics);
     }
 }

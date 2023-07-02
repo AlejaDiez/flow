@@ -1,3 +1,7 @@
+import java.util.List;
+
+import syntax.Parser;
+import syntax.expression.TreeExpression;
 import utils.Colors;
 
 public class jFlow {
@@ -17,14 +21,20 @@ public class jFlow {
             System.out.print(Colors.green(">>>") + " ");
             input = System.console().readLine();
 
-            // TODO: Parse the input
-
-            // TODO: Print syntax tree
-
-            // TODO: Print diagnostics
-
-            // Print the result
-            System.out.println(input);
+            // Parse the input
+            final Parser parser = new Parser(input);
+            final TreeExpression treeExpression = parser.parse();
+            final List<String> diagnostics = treeExpression.getDiagnostics(); 
+            
+            if (diagnostics.isEmpty()) {
+                // Print the result
+                System.out.println(treeExpression.evaluate());
+            } else {
+                // Print diagnostics
+                for (String diagnostic : diagnostics) {
+                    System.out.println(diagnostic);
+                }
+            }
             System.out.println();
         }
     }
