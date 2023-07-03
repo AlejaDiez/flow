@@ -2,11 +2,18 @@ package syntax.expression;
 
 import syntax.Token;
 
+/**
+ * A binary expression.
+ */
 public final class BinaryExpression extends Expression {
     /**
      * The left expression.
      */
     private final Expression _left;
+    /**
+     * The token of the expression.
+     */
+    private final Token _operator;
     /**
      * The right expression.
      */
@@ -15,13 +22,14 @@ public final class BinaryExpression extends Expression {
     /**
      * Constructor for BinaryExpression class.
      *
-     * @param left  The left expression.
-     * @param token The token of the expression.
-     * @param right The right expression.
+     * @param left     The left expression.
+     * @param operator The token of the expression.
+     * @param right    The right expression.
      */
-    public BinaryExpression(Expression left, Token token, Expression right) {
-        super(Expression.Type.BINARY, token);
+    public BinaryExpression(Expression left, Token operator, Expression right) {
+        super(Expression.Type.BINARY);
         _left = left;
+        _operator = operator;
         _right = right;
     }
 
@@ -32,6 +40,15 @@ public final class BinaryExpression extends Expression {
      */
     public Expression getLeft() {
         return _left;
+    }
+
+    /**
+     * Get the token of the expression.
+     *
+     * @return The token of the expression.
+     */
+    public Token getOperator() {
+        return _operator;
     }
 
     /**
