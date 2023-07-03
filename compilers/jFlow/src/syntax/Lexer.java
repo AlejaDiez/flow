@@ -5,6 +5,9 @@ import java.util.LinkedList;
 
 import utils.Colors;
 
+/**
+ * Lexer class.
+ */
 final class Lexer {
     /**
      * The input string to be tokenized.
@@ -65,7 +68,8 @@ final class Lexer {
         try {
             return new Token(type, Integer.parseInt(value), line, column);
         } catch (NumberFormatException e) {
-            _diagnostics.add(Colors.red("ERROR:") + " Invalid number '" + value + "' at line " + line + ", column " + column + ".");
+            _diagnostics.add(Colors.red("ERROR:") + " Invalid number '" + value + "' at line " + line + ", column "
+                    + column + ".");
             return new Token(Token.Type.UNKNOWN, value, line, column);
         }
     }
@@ -204,7 +208,8 @@ final class Lexer {
         final int line = 0;
         final int column = _position;
 
-        _diagnostics.add(Colors.red("ERROR:") + " unknown character '" + value + "' at line " + line + ", column " + column + ".");
+        _diagnostics.add(Colors.red("ERROR:") + " unknown character '" + value + "' at line " + line + ", column "
+                + column + ".");
         _advance();
         return new Token(type, value, line, column);
     }
@@ -253,6 +258,6 @@ final class Lexer {
      * @return A copy of the diagnostics.
      */
     public List<String> getDiagnostics() {
-        return new LinkedList<String>(_diagnostics);
+        return List.copyOf(_diagnostics);
     }
 }

@@ -6,10 +6,13 @@ import java.util.LinkedList;
 import syntax.expression.BinaryExpression;
 import syntax.expression.Expression;
 import syntax.expression.NumberExpression;
-import syntax.expression.TreeExpression;
+import syntax.expression.ParenthesesExpression;
 import utils.Colors;
 
-public final class Parser {
+/**
+ * Expression tree class.
+ */
+final class Parser {
     /**
      * Array of tokens to parse.
      */
@@ -41,7 +44,7 @@ public final class Parser {
         }
         _tokens = tokens.toArray(new Token[tokens.size()]);
         _position = 0;
-        _diagnostics = lexer.getDiagnostics();
+        _diagnostics = new LinkedList<String>(lexer.getDiagnostics());
     }
 
     /**
@@ -93,14 +96,24 @@ public final class Parser {
     }
 
     /**
-     * Parse a number expression.
+     * Parse a primary expression.
      * 
-     * @return The number expression.
+     * @return The primary expression.
      */
-    private NumberExpression _parseNumberExpression() {
-        final Token token = _match(Token.Type.NUMBER);
+    private Expression _parsePrimaryExpression() {
+        // Try to parse a parentheses expression.
+        if (_peekToken(0).getType() == Token.Type.LPAREN) {
+            final Token openParenthesis = _nextToken();
+            final Expression expression = _parseExpression();
+            final Token closeParenthesis = _match(Token.Type.RPAREN);
 
-        return new NumberExpression(token);
+            return new ParenthesesExpression(openParenthesis, expression, closeParenthesis);
+        }
+
+        // Parse a number expression.
+        final Token numberToken = _match(Token.Type.NUMBER);
+
+        return new NumberExpression(numberToken);
     }
 
     /**
@@ -109,11 +122,11 @@ public final class Parser {
      * @return The factor expression.
      */
     private Expression _parseFactorExpression() {
-        Expression expression = _parseNumberExpression();
+        Expression expression = _parsePrimaryExpression();
 
         while (_peekToken(0).getType() == Token.Type.MULTIPLY || _peekToken(0).getType() == Token.Type.DIVIDE) {
             final Token token = _nextToken();
-            final Expression nextExpression = _parseNumberExpression();
+            final Expression nextExpression = _parsePrimaryExpression();
 
             expression = new BinaryExpression(expression, token, nextExpression);
         }
@@ -138,15 +151,33 @@ public final class Parser {
     }
 
     /**
+     * Parse an expression.
+     * 
+     * @return The expression.
+     */
+    private Expression _parseExpression() {
+        return _parseTermExpression();
+    }
+
+    /**
      * Parse the input string.
      * 
      * @return The parsed expression.
      */
-    public TreeExpression parse() {
-        final Expression expression = _parseTermExpression();
+    public ExpressionTree parse() {
+        final Expression expression = _parseExpression();
         final Token endToken = _match(Token.Type.EOF);
         final List<String> diagnostics = new LinkedList<String>(_diagnostics);
 
-        return new TreeExpression(expression, endToken, diagnostics);
+        return new ExpressionTree(expression, endToken, diagnostics);
+    }
+
+    /**
+     * Get the list of diagnostics.
+     * 
+     * @return The list of diagnostics.
+     */
+    public List<String> getDiagnostics() {
+        return List.copyOf(_diagnostics);
     }
 }
