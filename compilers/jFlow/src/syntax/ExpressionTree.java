@@ -4,7 +4,7 @@ import java.util.List;
 
 import syntax.expression.BinaryExpression;
 import syntax.expression.Expression;
-import syntax.expression.NumberExpression;
+import syntax.expression.LiteralExpression;
 import syntax.expression.ParenthesesExpression;
 
 /**
@@ -82,25 +82,25 @@ public final class ExpressionTree {
      * @return The result of the expression.
      */
     private int _evaluateExpression(Expression expression) {
-        if (expression.getType() == Expression.Type.NUMBER) {
-            final NumberExpression numberExpression = (NumberExpression) expression;
+        if (expression.getType() == Expression.Type.LITERAL) {
+            final LiteralExpression literalExpression = (LiteralExpression) expression;
 
-            return (Integer) numberExpression.getToken().getValue();
+            return (Integer) literalExpression.getToken().getValue();
         } else if (expression.getType() == Expression.Type.UNARY) {
             throw new RuntimeException("Unary expressions are not yet supported.");
         } else if (expression.getType() == Expression.Type.BINARY) {
             final BinaryExpression binaryExpression = (BinaryExpression) expression;
-            final int leftNumber = _evaluateExpression((binaryExpression.getLeft()));
-            final int rightNumber = _evaluateExpression((binaryExpression.getRight()));
+            final int left = _evaluateExpression((binaryExpression.getLeft()));
+            final int right = _evaluateExpression((binaryExpression.getRight()));
 
             if (binaryExpression.getOperator().getType() == Token.Type.PLUS) {
-                return leftNumber + rightNumber;
+                return left + right;
             } else if (binaryExpression.getOperator().getType() == Token.Type.MINUS) {
-                return leftNumber - rightNumber;
+                return left - right;
             } else if (binaryExpression.getOperator().getType() == Token.Type.MULTIPLY) {
-                return leftNumber * rightNumber;
+                return left * right;
             } else if (binaryExpression.getOperator().getType() == Token.Type.DIVIDE) {
-                return leftNumber / rightNumber;
+                return left / right;
             } else {
                 throw new RuntimeException("Invalid binary operator.");
             }
@@ -136,10 +136,10 @@ public final class ExpressionTree {
 
         tree.append(indent).append(marker).append(expression.getType());
 
-        if (expression.getType() == Expression.Type.NUMBER) {
-            final NumberExpression numberExpression = (NumberExpression) expression;
+        if (expression.getType() == Expression.Type.LITERAL) {
+            final LiteralExpression literalExpression = (LiteralExpression) expression;
 
-            tree.append(" ").append(numberExpression.getToken().getValue());
+            tree.append(" ").append(literalExpression.getToken().getValue());
         } else if (expression.getType() == Expression.Type.UNARY) {
             throw new UnsupportedOperationException("Unary expressions are not yet supported.");
         } else if (expression.getType() == Expression.Type.BINARY) {

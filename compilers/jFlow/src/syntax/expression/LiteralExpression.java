@@ -3,21 +3,21 @@ package syntax.expression;
 import syntax.Token;
 
 /**
- * Number expression class.
+ * Literal expression class.
  */
-public final class NumberExpression extends Expression {
+public final class LiteralExpression extends Expression {
     /**
      * The token of the expression.
      */
     private final Token _token;
 
     /**
-     * Constructor for NumberExpression class.
+     * Constructor for LiteralExpression class.
      *
      * @param token The token of the expression.
      */
-    public NumberExpression(Token token) {
-        super(Expression.Type.NUMBER);
+    public LiteralExpression(Token token) {
+        super(Expression.Type.LITERAL);
         _token = token;
     }
 

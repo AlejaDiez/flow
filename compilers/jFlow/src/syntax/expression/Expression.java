@@ -32,7 +32,7 @@ public abstract class Expression {
      * Enumeration for different types of expressions.
      */
     public enum Type {
-        NUMBER,
+        LITERAL,
         UNARY,
         BINARY,
         PARENTHESES,
@@ -40,8 +40,8 @@ public abstract class Expression {
 
         @Override
         public String toString() {
-            if (this == NUMBER) {
-                return "NUMBER EXPRESSION";
+            if (this == LITERAL) {
+                return "LITERAL EXPRESSION";
             } else if (this == UNARY) {
                 return "UNARY EXPRESSION";
             } else if (this == BINARY) {

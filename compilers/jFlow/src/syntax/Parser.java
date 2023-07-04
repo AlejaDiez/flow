@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 import syntax.expression.BinaryExpression;
 import syntax.expression.Expression;
-import syntax.expression.NumberExpression;
+import syntax.expression.LiteralExpression;
 import syntax.expression.ParenthesesExpression;
 import utils.Colors;
 
@@ -83,7 +83,7 @@ final class Parser {
      * @return The current token if it matches, otherwise a new token with the given
      *         type.
      */
-    private Token _match(Token.Type type) {
+    private Token _matchToken(Token.Type type) {
         final Token currentToken = _peekToken(0);
 
         if (currentToken.getType() != type) {
@@ -105,15 +105,15 @@ final class Parser {
         if (_peekToken(0).getType() == Token.Type.LPAREN) {
             final Token openParenthesis = _nextToken();
             final Expression expression = _parseExpression();
-            final Token closeParenthesis = _match(Token.Type.RPAREN);
+            final Token closeParenthesis = _matchToken(Token.Type.RPAREN);
 
             return new ParenthesesExpression(openParenthesis, expression, closeParenthesis);
         }
 
         // Parse a number expression.
-        final Token numberToken = _match(Token.Type.NUMBER);
+        final Token numberToken = _matchToken(Token.Type.NUMBER);
 
-        return new NumberExpression(numberToken);
+        return new LiteralExpression(numberToken);
     }
 
     /**
@@ -166,7 +166,7 @@ final class Parser {
      */
     public ExpressionTree parse() {
         final Expression expression = _parseExpression();
-        final Token endToken = _match(Token.Type.EOF);
+        final Token endToken = _matchToken(Token.Type.EOF);
         final List<String> diagnostics = new LinkedList<String>(_diagnostics);
 
         return new ExpressionTree(expression, endToken, diagnostics);
