@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+    <style>
+        .background {
+            fill: #13171a;
+        }
+
+        .foreground {
+            fill: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .background {
+                fill: #f2f4f8;
+            }
+
+            .foreground {
+                fill: #000000;
+            }
+        }
+    </style>
+
+    <rect class="background" width="1024" height="1024" rx="228" ry="228"/>
+    <g class="foreground">
+        <polygon points="671.92 427.26 607.85 538.69 481.94 538.69 351.94 763.88 287.62 652.45 353.3 538.69 417.62 427.26 671.92 427.26"/>
+        <polygon points="768 260.12 703.93 371.55 385.5 371.55 356.03 422.61 353.36 427.26 319.15 486.51 296.14 446.68 284.94 427.26 256 377.12 259.2 371.55 323.25 260.12 768 260.12"/>
+    </g>
+</svg>
