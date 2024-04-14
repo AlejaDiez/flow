@@ -1,3 +1,12 @@
+import java.io.File;
+
+import exception.FileNotFoundException;
+import exception.InvalidExtensionException;
+import exception.SyntaxErrorException;
+import syntax.Lexer;
+import syntax.Token;
+import syntax.Token.TokenType;
+
 public class Flow {
     public static void main(String[] args) {
         // Print the welcome message
@@ -6,17 +15,39 @@ public class Flow {
         System.out.println("   / ____/ /   / __ \\ |     / /");
         System.out.println("  / /_  / /   / / / / | /| / / ");
         System.out.println(" / __/ / /___/ /_/ /| |/ |/ /  ");
-        System.out.println("/_/   /_____/\\____/ |__/|__/   ");
+        System.out.println("/_/   /_____/\\____/ |__/|__/ 0.0");
         System.out.println();
         System.out.println();
 
-        // Main loop
-        while (true) {
-            String input = "";
+        // Start compiling the code
+        try {
+            if (args.length == 0) {
+                // Read the input from the console
+                while (true) {
+                    System.out.print("\033[32m>>>\033[0m ");
 
-            // Read input from the user
-            System.out.print("\033[32m>>>\033[0m ");
-            input = System.console().readLine();
+                    final String input = System.console().readLine();
+                    final Lexer lexer = new Lexer(input);
+
+                    for (Token token = lexer.scan(); token.type != TokenType.EOF; token = lexer.scan()) {
+                        System.out.println(token);
+                    }
+                }
+
+            } else {
+                // Read the input from the file
+                final Lexer lexer = new Lexer(new File(args[0]));
+
+                for (Token token = lexer.scan(); token.type != TokenType.EOF; token = lexer.scan()) {
+                    System.out.println(token);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (InvalidExtensionException e) {
+            System.err.println(e.getMessage());
+        } catch (SyntaxErrorException e) {
+            System.err.println(e.getMessage());
         }
     }
 }
