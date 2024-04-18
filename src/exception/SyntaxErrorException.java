@@ -1,5 +1,7 @@
 package exception;
 
+import syntax.Lexer;
+
 /**
  * SyntaxErrorException
  */
@@ -12,16 +14,28 @@ public class SyntaxErrorException extends Exception {
     /**
      * Creates a new syntax error exception.
      *
-     * @param inputName The name of the input.
-     * @param input     The input string.
-     * @param line      The line number of the error.
-     * @param column    The column number of the error.
+     * @param lexer  The lexer to be used.
+     * @param line   The line number of the error.
+     * @param column The column number of the error.
      */
-    public SyntaxErrorException(String inputName, String input, int line, int column) {
+    public SyntaxErrorException(Lexer lexer, int line, int column) {
+        this("invalid syntax", lexer, line, column);
+    }
+
+    /**
+     * Creates a new syntax error exception.
+     *
+     * @param error  The error message.
+     * @param lexer  The lexer to be used.
+     * @param line   The line number of the error.
+     * @param column The column number of the error.
+     */
+    public SyntaxErrorException(String error, Lexer lexer, int line, int column) {
         super(
                 String.format("%s\n%s\n%s",
-                        input.split("\n")[line - 1],
+                        lexer.getInputLine(line),
                         " ".repeat(column - 1) + "\033[31m^\033[0m",
-                        String.format("\033[31mSyntaxError\033[0m: invalid syntax (<%s>, line %d)", inputName, line)));
+                        String.format("\033[31mSyntaxError\033[0m: %s (<%s>, line %d)",
+                                error, lexer.getInputName(), line)));
     }
 }

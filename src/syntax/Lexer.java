@@ -11,7 +11,7 @@ import syntax.Token.TokenType;
 /**
  * Represents a lexer for the input code.
  */
-public class Lexer {
+public final class Lexer {
     /**
      * The input file name.
      */
@@ -155,7 +155,53 @@ public class Lexer {
                 if (Character.isDigit(c)) {
                     return _scanNumber();
                 }
-                throw new SyntaxErrorException(this._inputName, this._input, this._line, this._column);
+                throw new SyntaxErrorException(this, this._line, this._column);
         }
+    }
+
+    /**
+     * Returns the name of the input.
+     * 
+     * @return The name of the input.
+     */
+    public String getInputName() {
+        return this._inputName;
+    }
+
+    /**
+     * Returns the input string.
+     * 
+     * @return The input string.
+     */
+    public String getInput() {
+        return this._input;
+    }
+
+    /**
+     * Returns the line at the given line number.
+     * 
+     * @param line The line number.
+     * @return The line at the given line number.
+     */
+    public String getInputLine(int line) {
+        return this._input.split("\n")[line - 1];
+    }
+
+    /**
+     * Returns the line number of the lexer.
+     * 
+     * @return The line number of the lexer.
+     */
+    public int getLine() {
+        return this._line;
+    }
+
+    /**
+     * Returns the column number of the lexer.
+     * 
+     * @return The column number of the lexer.
+     */
+    public int getColumn() {
+        return this._column;
     }
 }

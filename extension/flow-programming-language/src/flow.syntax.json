@@ -1,0 +1,200 @@
+{
+    "name": "flow",
+    "version": "0.0.0",
+    "fileTypes": ["flow"],
+    "scopeName": "source.flow",
+    "foldingStartMarker": "\\{\\s*$",
+    "foldingStopMarker": "^\\s*\\}",
+    "patterns": [
+        { "include": "#declarations" },
+        { "include": "#comments" },
+        { "include": "#constants" },
+        { "include": "#entities" },
+        { "include": "#keywords" },
+        { "include": "#operators" },
+        { "include": "#strings" }
+    ],
+    "repository": {
+        "declarations": {
+            "patterns": [
+                {
+                    "name": "meta.declaration.flow",
+                    "begin": "^\\w*\\b(import)\\b",
+                    "beginCaptures": {
+                        "0": {
+                            "name": "keyword.other.import.flow"
+                        }
+                    },
+                    "end": ";",
+                    "endCaptures": {
+                        "0": {
+                            "name": "punctuation.terminator.flow"
+                        }
+                    },
+                    "patterns": [
+                        { "include": "#strings" },
+                        { "include": "#comments" },
+                        {
+                            "name": "keyword.cast.flow",
+                            "match": "(?<!\\$)\\bas\\b(?!\\$)"
+                        }
+                    ]
+                }
+            ]
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.flow",
+                    "match": "#.*$"
+                }
+            ]
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "name": "constant.numeric",
+                    "match": "\\b(\\d+\\.?\\d*|0x[0-9A-Fa-f]+|0b[01]+|0o[0-7]+)\\b"
+                },
+                {
+                    "name": "constant.language",
+                    "match": "\\b(true|false|null)\\b"
+                }
+            ]
+        },
+        "entities": {
+            "patterns": [
+                { "include": "#class-identifier" },
+                { "include": "#function-identifier" }
+            ]
+        },
+        "class-identifier": {
+            "patterns": [
+                {
+                    "match": "(?<!\\$)\\b(void|any|int|float|bool|string|list|set|map)\\b(?!\\$)",
+                    "name": "support.class.flow"
+                },
+                {
+                    "begin": "(?<![a-zA-Z0-9_$])([_$]*[A-Z][a-zA-Z0-9_$]*)\\b",
+                    "end": "(?!<)",
+                    "beginCaptures": {
+                        "1": {
+                            "name": "support.class.flow"
+                        }
+                    },
+                    "patterns": [{ "include": "#type-args" }]
+                }
+            ]
+        },
+        "function-identifier": {
+            "patterns": [
+                {
+                    "match": "([_$]*[a-z][a-zA-Z0-9_$]*)(<(?:[a-zA-Z0-9_$<>?]|,\\s*|\\s+:\\s+)+>)?[!?]?\\(",
+                    "captures": {
+                        "1": {
+                            "name": "entities.name.function.flow"
+                        },
+                        "2": {
+                            "patterns": [
+                                {
+                                    "include": "#type-args"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "type-args": {
+            "begin": "(<)",
+            "end": "(>)",
+            "beginCaptures": {
+                "1": {
+                    "name": "other.source.flow"
+                }
+            },
+            "endCaptures": {
+                "1": {
+                    "name": "other.source.flow"
+                }
+            },
+            "patterns": [
+                { "include": "#class-identifier" },
+                { "match": "," },
+                {
+                    "name": "keyword.declaration.flow",
+                    "match": ":"
+                },
+                {
+                    "include": "#comments"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "variable.language.flow",
+                    "match": "(?<!\\$)\\b(this|super)\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.cast.flow",
+                    "match": "(?<!\\$)\\bas\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.control.catch-exception.flow",
+                    "match": "(?<!\\$)\\b(try|catch|finally|throw)\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.control.flow",
+                    "match": "(?<!\\$)\\b(stop|case|next|loop|else|if|in|match)\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.control.flow",
+                    "match": "(?<!\\$)\\b(async(\\*)?|await)\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.control.flow",
+                    "match": "(?<!\\$)\\bassert\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.control.return.flow",
+                    "match": "(?<!\\$)\\b(return)\\b(?!\\$)"
+                },
+                {
+                    "name": "keyword.declaration.flow",
+                    "match": "(?<!\\$)\\b(fn|abstract|class|enum)\\b(?!\\$)"
+                },
+                {
+                    "name": "storage.modifier.flow",
+                    "match": "(?<!\\$)\\b(static|const|var|override)\\b(?!\\$)"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.flow",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "invalid.string.newline",
+                            "match": "\\n"
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.flow",
+                    "begin": "'",
+                    "end": "'",
+                    "patterns": [
+                        {
+                            "name": "invalid.string.newline",
+                            "match": "\\n"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

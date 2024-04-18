@@ -1,0 +1,167 @@
+import "package" as packageAlias; # Import a module
+
+# Variables
+const y = 6; # Constant, cannot be changed after initialization
+var x = 5; # Variable, can be changed after initialization
+const var z = "Hello World"; # Constant variable, can only be initialized once but the internal values of the object can change
+
+# Data Types
+var a = 5; # Any type, can be changed the type of the variable in runtime
+var b: any = 5; # Any type
+var c: int = 5; # Integer type
+var d: float = 13.14; # Float type 
+var e: string = "Hello World"; # String type
+var f: bool = true; # Boolean type
+var g: list = [1, 2, 3]; # List type with any type of elements
+var h: list<int> = [1, 2, 3]; # List type with specific type of elements
+var k: set = {1, 2, 3}; # Set type with any type of elements
+var l: set<int> = {1, 2, 3}; # Set type with specific type of elements
+var i: map = {"key": "value"}; # Map type with any type of keys and values
+var j: map<int, string> = {1: "one", 2: "two"}; # Map type with specific type of keys and values
+
+# Operators
+var m = 5 + 5; # Addition
+var n = 5 - 5; # Subtraction
+var o = 5 * 5; # Multiplication
+var p = 5 / 5; # Division
+var q = 5 % 5; # Modulus
+var r = 5 ** 5; # Exponentiation
+var s = 5 // 5; # Floor division
+var aa = 5 == 5; # Equal
+var ab = 5 != 5; # Not equal
+var ac = 5 > 5; # Greater than
+var ad = 5 < 5; # Less than
+var af = 5 >= 5; # Greater than or equal
+var ah = 5 <= 5; # Less than or equal
+var ai = true && true; # And
+var aj = true || false; # Or
+var ak = !true; # Not
+var al = 5 & 5; # Bitwise and
+var am = 5 | 5; # Bitwise or
+var an = 5 ^ 5; # Bitwise xor
+var ao = ~5; # Bitwise not
+var ap = 5 << 5; # Bitwise left shift
+var aq = 5 >> 5; # Bitwise right shift
+
+# Control Structures
+if (5 == 5) {
+    # Do something
+} else if (5 != 5) {
+    # Do something
+} else {
+    # Do something
+}
+
+loop {
+    # Do something in an infinite loop
+}
+
+loop (true) {
+    # Do something until the condition is false
+}
+
+loop (var i = 0; i < 5; i++) {
+    # Do something with a counter
+}
+
+loop (const x in [1, 2, 3]) {
+    # Do something with each element of the list
+}
+
+loop (const [k, v] in {"key": "value"}) {
+    # Do something with each key-value pair of the map
+}
+
+# Functions
+fn add<A>(a: int, b: int) -> int {
+    return a + b;
+}
+
+# Classes
+class Person<A>: Eas {
+    static var _idCounter: int = 0;
+    const id: int = Person._idCounter++;
+    const name: string;
+    var age: int;
+    var height: float;
+    var weight: float;
+
+    Person(name: string, age: int, height: float, weight: float) {
+        this.name = name;
+        this.age = age;
+        this.height = height;
+        this.weight = weight;
+    }
+
+    fn get_id() -> int {
+        return this.id;
+    }
+
+    fn get_name() -> string {
+        return this.name;
+    }
+
+    fn get_age() -> int {
+        return this.age;
+    }
+
+    fn get_height() -> float {
+        return this.height;
+    }
+
+    fn get_weight() -> float {
+        return this.weight;
+    }
+}
+
+# Objects
+var person: Person = Person("John Doe", 30, 1.75, 70.0);
+
+# Inheritance
+class Student: Person {
+    var student_id: int;
+
+    Student(name: string, age: int, height: float, weight: float, student_id: int) {
+        super(name, age, height, weight);
+        this.student_id = student_id;
+    }
+
+    fn get_student_id() -> int {
+        return this.student_id;
+    }
+
+    override fn get_id() -> int {
+        return this.student_id;
+    }
+}
+
+# Objects
+var student: Student = Student("Jane Doe", 25, 1.65, 60.0, 123456);
+
+# Abstract Classes
+abstract class Animal {
+    const name: string;
+    var age: int;
+    var height: float;
+    var weight: float;
+
+    Animal(name: string, age: int, height: float, weight: float) {
+        this.name = name;
+        this.age = age;
+        this.height = height;
+        this.weight = weight;
+    }
+
+    fn make_sound() -> string;
+
+    fn get_name() -> string {
+        return this.name;
+    }
+}
+
+# Enumerations
+enum Color {
+    RED,
+    GREEN,
+    BLUE
+}

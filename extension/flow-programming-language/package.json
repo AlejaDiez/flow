@@ -1,0 +1,35 @@
+{
+    "name": "flow-programming-language",
+    "displayName": "Flow",
+    "description": "Language support for Flow",
+    "icon": "icon.png",
+    "version": "0.0.0",
+    "engines": {
+        "vscode": "^1.88.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "flow",
+                "aliases": [
+                    "Flow",
+                    "flow"
+                ],
+                "extensions": [
+                    ".flow"
+                ],
+                "configuration": "./src/flow.configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "flow",
+                "scopeName": "source.flow",
+                "path": "./src/flow.syntax.json"
+            }
+        ]
+    }
+}
