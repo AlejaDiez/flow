@@ -47,8 +47,20 @@ public class Token {
      * The type of the token.
      */
     public enum TokenType {
-        PLUS, MINUS, STAR, SLASH,
-        INTEGER,
-        EOF
+        // Operators
+        PLUS(1), MINUS(1), STAR(2), SLASH(2),
+        // Literals
+        INTEGER(0),
+        // End of file
+        EOF(0);
+
+        /**
+         * The precedence of the token.
+         */
+        final int precedence;
+
+        private TokenType(int precedence) {
+            this.precedence = precedence;
+        }
     }
 }

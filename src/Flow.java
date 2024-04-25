@@ -3,12 +3,12 @@ import java.io.File;
 import exception.FileNotFoundException;
 import exception.InvalidExtensionException;
 import exception.SyntaxErrorException;
-import syntax.Lexer;
-import syntax.Token;
-import syntax.Token.TokenType;
+import syntax.Parser;
+import syntax.expression.Expression;
 
 public class Flow {
-    public static void main(String[] args) {
+    public static void main(String[] arg) {
+        final String[] args = { "test/input.flow" };
         // Print the welcome message
         System.out.print("\033[H\033[2J");
         System.out.println("    ________    ____ _       __");
@@ -27,20 +27,14 @@ public class Flow {
                     System.out.print("\033[32m>>>\033[0m ");
 
                     final String input = System.console().readLine();
-                    final Lexer lexer = new Lexer(input);
-
-                    for (Token token = lexer.scan(); token.type != TokenType.EOF; token = lexer.scan()) {
-                        System.out.println(token);
-                    }
                 }
 
             } else {
                 // Read the input from the file
-                final Lexer lexer = new Lexer(new File(args[0]));
+                final Parser parser = new Parser(new File(args[0]));
+                final Expression ex = parser.parse();
 
-                for (Token token = lexer.scan(); token.type != TokenType.EOF; token = lexer.scan()) {
-                    System.out.println(token);
-                }
+                System.out.println(ex.evaluate());
             }
         } catch (FileNotFoundException e) {
             System.err.println(e.getMessage());
