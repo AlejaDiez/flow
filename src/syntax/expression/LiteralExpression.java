@@ -23,6 +23,7 @@ public class LiteralExpression extends Expression {
         this.literal = literal;
     }
 
+    @Override
     public int evaluate() {
         return (Integer) literal.value;
     }

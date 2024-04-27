@@ -1,10 +1,6 @@
 import java.io.File;
 
-import exception.FileNotFoundException;
-import exception.InvalidExtensionException;
-import exception.SyntaxErrorException;
 import syntax.Parser;
-import syntax.expression.Expression;
 
 public class Flow {
     public static void main(String[] arg) {
@@ -32,15 +28,9 @@ public class Flow {
             } else {
                 // Read the input from the file
                 final Parser parser = new Parser(new File(args[0]));
-                final Expression ex = parser.parse();
-
-                System.out.println(ex.evaluate());
+                parser.parse();
             }
-        } catch (FileNotFoundException e) {
-            System.err.println(e.getMessage());
-        } catch (InvalidExtensionException e) {
-            System.err.println(e.getMessage());
-        } catch (SyntaxErrorException e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
     }

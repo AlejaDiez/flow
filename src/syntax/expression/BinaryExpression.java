@@ -1,5 +1,6 @@
 package syntax.expression;
 
+import exception.EvaluatorErrorException;
 import syntax.Token;
 
 public class BinaryExpression extends Expression {
@@ -30,21 +31,22 @@ public class BinaryExpression extends Expression {
         this.right = right;
     }
 
-    public int evaluate() {
-        final int leftValue = left.evaluate();
-        final int rightValue = right.evaluate();
+    @Override
+    public int evaluate() throws EvaluatorErrorException {
+        final int left = this.left.evaluate();
+        final int right = this.right.evaluate();
 
-        switch (operator.type) {
+        switch (this.operator.type) {
             case PLUS:
-                return leftValue + rightValue;
+                return left + right;
             case MINUS:
-                return leftValue - rightValue;
+                return left - right;
             case STAR:
-                return leftValue * rightValue;
+                return left * right;
             case SLASH:
-                return leftValue / rightValue;
+                return left / right;
             default:
-                throw new IllegalArgumentException("Invalid operator.");
+                throw new EvaluatorErrorException("Invalid binary operator.");
         }
     }
 

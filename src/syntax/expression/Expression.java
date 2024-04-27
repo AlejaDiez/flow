@@ -1,5 +1,7 @@
 package syntax.expression;
 
+import exception.EvaluatorErrorException;
+
 /**
  * Represents an expression.
  */
@@ -18,7 +20,13 @@ public abstract class Expression {
         this.type = type;
     }
 
-    abstract public int evaluate();
+    /**
+     * Evaluates the expression.
+     *
+     * @return The result of the evaluation.
+     * @throws EvaluatorErrorException If an error occurs during the evaluation.
+     */
+    public abstract int evaluate() throws EvaluatorErrorException;
 
     /**
      * Represents the expression type.
@@ -26,6 +34,6 @@ public abstract class Expression {
     public enum ExpressionType {
         LITERAL,
         UNARY,
-        BINARY
+        BINARY;
     }
 }
