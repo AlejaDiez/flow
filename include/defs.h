@@ -12,6 +12,7 @@
 
 #define MAX_LEN 256
 #define MAX_SYM 1024
+#define NO_PRIMITIVE -1
 #define NO_VALUE \
     (VALUE) { .pointer = NULL }
 #define NO_REG -1
@@ -49,6 +50,7 @@ typedef enum TOKEN_TYPE
     T_IDENT,
     // Types
     T_VOID,
+    T_BOOL,
     T_INT,
     // Keywords
     T_VAR,
@@ -89,6 +91,7 @@ static const char *const TOKEN_STR[] = {
     "identifier",
     // Types
     "void",
+    "bool",
     "int",
     // Keywords
     "var",
@@ -111,6 +114,14 @@ typedef struct TOKEN
     TOKEN_TYPE type;
     VALUE value;
 } TOKEN;
+
+// Primitive Types
+typedef enum PRIMITIVE_TYPE
+{
+    P_VOID,
+    P_BOOL,
+    P_INT
+} PRIMITIVE_TYPE;
 
 // Abstract Syntax Tree
 typedef enum AST_TYPE
@@ -145,6 +156,7 @@ typedef enum AST_TYPE
 typedef struct AST
 {
     AST_TYPE type;
+    PRIMITIVE_TYPE primitive;
     struct AST *left;
     struct AST *middle;
     struct AST *right;
@@ -152,7 +164,15 @@ typedef struct AST
 } AST;
 
 // Symbol
+typedef enum SYMBOL_TYPE
+{
+    S_VARIABLE,
+    S_FUNCTION
+} SYMBOL_TYPE;
+
 typedef struct SYMBOL
 {
+    SYMBOL_TYPE type;
     char *name;
+    PRIMITIVE_TYPE primitive;
 } SYMBOL;

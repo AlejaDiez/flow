@@ -88,21 +88,21 @@ static AST *primary()
     switch (Token.type)
     {
     case T_INTLIT:
-        n = make_AST_leaf(A_INTLIT, Token.value);
+        n = make_AST_leaf(A_INTLIT, NO_PRIMITIVE, Token.value);
         scan();
         break;
     case T_IDENT:
         id = find_glob(Token.value.string);
         if (id == -1)
             undeclared_variable_error(Token.value.string);
-        n = make_AST_leaf(A_IDENT, (VALUE){id});
+        n = make_AST_leaf(A_IDENT, NO_PRIMITIVE, (VALUE){id});
         scan();
         break;
     case T_LPAREN:
         match(T_LPAREN);
         n = binary(0);
         match(T_RPAREN);
-        n = make_AST_unary(A_PAREN, n, NO_VALUE);
+        n = make_AST_unary(A_PAREN, NO_PRIMITIVE, n, NO_VALUE);
         break;
     default:
         match_error("math expression", TOKEN_STR[Token.type]);
@@ -126,7 +126,7 @@ static AST *binary(int prec)
         // Parse the right side
         rgt = binary(op_prec(typ));
         // Create a new AST node
-        lft = make_AST_binary(op_to_ast(typ), lft, rgt, NO_VALUE);
+        lft = make_AST_binary(op_to_ast(typ), NO_PRIMITIVE, lft, rgt, NO_VALUE);
         // Update the type
         typ = Token.type;
     }

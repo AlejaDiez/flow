@@ -16,7 +16,7 @@ void var_declaration()
     match(T_VAR);
     // Add the variable to the global symbol table
     ident = match(T_IDENT);
-    add_glob(ident.string);
+    add_glob(S_VARIABLE, ident.string, NO_PRIMITIVE);
     // Match the sintax
     match(T_COLON);
     match(T_INT);
@@ -36,7 +36,7 @@ void fun_declaration()
     match(T_FUN);
     // Add the function to the global symbol table
     ident = match(T_IDENT);
-    add_glob(ident.string);
+    add_glob(S_FUNCTION, ident.string, NO_PRIMITIVE);
     // Match the sintax
     match(T_LPAREN);
     match(T_RPAREN);

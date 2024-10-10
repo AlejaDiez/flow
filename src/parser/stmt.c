@@ -20,7 +20,7 @@ static AST *add_seq(AST *seq, AST *stmt)
     {
         return stmt;
     }
-    return make_AST_binary(A_SEQ, seq, stmt, NO_VALUE);
+    return make_AST_binary(A_SEQ, NO_PRIMITIVE, seq, stmt, NO_VALUE);
 }
 
 // Parse a variable assignment
@@ -36,13 +36,13 @@ static AST *assignment_statement()
     id = find_glob(ident.string);
     if (id == -1)
         undeclared_variable_error(ident.string);
-    rgt = make_AST_leaf(A_IDENT, (VALUE){id});
+    rgt = make_AST_leaf(A_IDENT, NO_PRIMITIVE, (VALUE){id});
     // Match the sintax
     match(T_ASSIGN);
     // Parse the expression
     lft = expression();
     // Create the AST
-    n = make_AST_binary(A_ASSIGN, lft, rgt, NO_VALUE);
+    n = make_AST_binary(A_ASSIGN, NO_PRIMITIVE, lft, rgt, NO_VALUE);
     return n;
 }
 
@@ -71,7 +71,7 @@ static AST *if_else_statement()
         false_stmt = statement(true);
     }
     // Create the AST
-    n = make_AST_node(A_IFELSE, cond, true_stmt, false_stmt, NO_VALUE);
+    n = make_AST_node(A_IFELSE, NO_PRIMITIVE, cond, true_stmt, false_stmt, NO_VALUE);
     return n;
 }
 
@@ -112,10 +112,10 @@ static AST *loop_statement()
     // Create the AST
     n = stmt;
     if (upd)
-        n = make_AST_binary(A_SEQ, n, upd, NO_VALUE);
-    n = make_AST_binary(A_LOOP, cond, n, NO_VALUE);
+        n = make_AST_binary(A_SEQ, NO_PRIMITIVE, n, upd, NO_VALUE);
+    n = make_AST_binary(A_LOOP, NO_PRIMITIVE, cond, n, NO_VALUE);
     if (init)
-        n = make_AST_binary(A_SEQ, init, n, NO_VALUE);
+        n = make_AST_binary(A_SEQ, NO_PRIMITIVE, init, n, NO_VALUE);
     return n;
 }
 
@@ -131,7 +131,7 @@ static AST *print_statement()
     expr = expression();
     // Match syntax
     match(T_RPAREN);
-    return make_AST_unary(A_PRINT, expr, NO_VALUE);
+    return make_AST_unary(A_PRINT, NO_PRIMITIVE, expr, NO_VALUE);
 }
 
 // Parse a statement

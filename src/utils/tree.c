@@ -8,7 +8,7 @@
 #include "decl.h"
 
 // Make a new AST node
-AST *make_AST_node(AST_TYPE typ, AST *lft, AST *mid, AST *rgt, VALUE val)
+AST *make_AST_node(AST_TYPE typ, PRIMITIVE_TYPE prim, AST *lft, AST *mid, AST *rgt, VALUE val)
 {
     AST *n;
 
@@ -18,6 +18,7 @@ AST *make_AST_node(AST_TYPE typ, AST *lft, AST *mid, AST *rgt, VALUE val)
         fatal("out of memory", EX_SOFTWARE);
     // Copy all the field values and return it
     n->type = typ;
+    n->primitive = prim;
     n->left = lft;
     n->middle = mid;
     n->right = rgt;
@@ -26,21 +27,21 @@ AST *make_AST_node(AST_TYPE typ, AST *lft, AST *mid, AST *rgt, VALUE val)
 }
 
 // Make a new AST binary node
-AST *make_AST_binary(AST_TYPE typ, AST *lft, AST *rgt, VALUE val)
+AST *make_AST_binary(AST_TYPE typ, PRIMITIVE_TYPE prim, AST *lft, AST *rgt, VALUE val)
 {
-    return make_AST_node(typ, lft, NULL, rgt, val);
+    return make_AST_node(typ, prim, lft, NULL, rgt, val);
 }
 
 // Make a new AST unary node
-AST *make_AST_unary(AST_TYPE typ, AST *chld, VALUE val)
+AST *make_AST_unary(AST_TYPE typ, PRIMITIVE_TYPE prim, AST *chld, VALUE val)
 {
-    return make_AST_node(typ, chld, NULL, NULL, val);
+    return make_AST_node(typ, prim, chld, NULL, NULL, val);
 }
 
 // Make a new AST leaf node
-AST *make_AST_leaf(AST_TYPE typ, VALUE val)
+AST *make_AST_leaf(AST_TYPE typ, PRIMITIVE_TYPE prim, VALUE val)
 {
-    return make_AST_node(typ, NULL, NULL, NULL, val);
+    return make_AST_node(typ, prim, NULL, NULL, NULL, val);
 }
 
 // Clean up the AST nodes

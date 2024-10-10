@@ -94,21 +94,13 @@ print(f"Hello, World! Here I am {pi}");
 
 ## Changelog
 
-Parse function declarations.
+Include primitive data types and symbol type declarations.
 
-```flow
-fun functionName(): void {
-    // Function body
-}
-```
-
--   Add new test cases for function declarations.
--   Update the `decl.h` file to include function declarations and convert some static functions to public functions.
--   Update the `defs.h` file to include function declarations scanner tokens.
--   Update the `gen.c` and `x86_64.c` file to include function declarations and change compilation process.
--   Update the `decl.c` and `stmt.c` file to parse function declarations.
--   Update the `scan.c` file to scan function calls.
--   Update the `main.c` file to change the compilation process.
+-   Update the `decl.h` file to update all the functions with the new primitive data types.
+-   Update the `defs.h` file to include primitive data types and symbol type declarations, also update SYMBOL struct to include the new symbol type and primitive data types.
+-   Update the `decl.c`, `expr.c` and `stmt.c` files to update all the functions with the new primitive data types.
+-   Update the `sym.c` file to include the new primitive data types and symbol type declarations.
+-   Update the `tree.c` file to include the primitive data types that are used in the tree.
 
 ## Contribution
 

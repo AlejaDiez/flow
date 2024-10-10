@@ -59,12 +59,12 @@ void compile_error(const char *msg);
 
 // utils/sym.c
 int find_glob(const char *str);
-int add_glob(const char *str);
+int add_glob(SYMBOL_TYPE typ, const char *str, PRIMITIVE_TYPE prim);
 
 // utils/tree.c
-AST *make_AST_node(AST_TYPE typ, AST *lft, AST *mid, AST *rgt, VALUE val);
-AST *make_AST_binary(AST_TYPE typ, AST *lft, AST *rgt, VALUE val);
-AST *make_AST_unary(AST_TYPE typ, AST *chld, VALUE val);
-AST *make_AST_leaf(AST_TYPE typ, VALUE val);
+AST *make_AST_node(AST_TYPE typ, PRIMITIVE_TYPE prim, AST *lft, AST *mid, AST *rgt, VALUE val);
+AST *make_AST_binary(AST_TYPE typ, PRIMITIVE_TYPE prim, AST *lft, AST *rgt, VALUE val);
+AST *make_AST_unary(AST_TYPE typ, PRIMITIVE_TYPE prim, AST *chld, VALUE val);
+AST *make_AST_leaf(AST_TYPE typ, PRIMITIVE_TYPE prim, VALUE val);
 void free_AST(AST *n);
 void free_AST_chld(AST *n);

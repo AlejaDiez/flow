@@ -32,7 +32,7 @@ int find_glob(const char *str)
 }
 
 // Add a new symbol to the global symbol table and return its index
-int add_glob(const char *str)
+int add_glob(SYMBOL_TYPE typ, const char *str, PRIMITIVE_TYPE prim)
 {
     int i;
 
@@ -42,6 +42,8 @@ int add_glob(const char *str)
         return i;
     }
     i = new_glob();
+    GlobalSymbols[i].type = typ;
     GlobalSymbols[i].name = strdup(str);
+    GlobalSymbols[i].primitive = prim;
     return i;
 }
