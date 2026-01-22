@@ -26,7 +26,6 @@
 #undef extern_
 #include "decl.h"
 
-// Init global variables
 void init()
 {
     Putback = 0;
@@ -35,40 +34,42 @@ void init()
     Length = 0;
 }
 
-// Main scan loop
-void scanfile()
-{
-    Token T;
-
-    // Mientras scan() devuelva 1 (no sea fin de archivo)
-    while (scan(&T))
-    {
-        printf("Token encontrado: %d", T.type);
-        if (T.type == T_INTLIT)
-        {
-            printf(", valor: %d", T.value.integer);
-        }
-        printf("\n");
-    }
-}
-
 int main(int argc, char *argv[])
 {
-    // Check for input file
     if (argc != 2)
     {
         fprintf(stderr, "Error: not input file\n");
         exit(1);
     }
-    // Initialize global variables
+
     init();
+
     // Open input file
     if ((InputFile = fopen(argv[1], "r")) == NULL)
     {
-        fprintf(stderr, "Error: cannot open input file\n");
+        fprintf(stderr, "Error: cannot open input file %s\n", argv[1]);
         exit(1);
     }
-    // Scan the input file
-    scanfile();
-    exit(0);
+
+    // Create a new output file
+    if ((OutFile = fopen("out.s", "w")) == NULL)
+    {
+        fprintf(stderr, "Error: cannot create output file\n");
+        exit(1);
+    }
+
+    // Load first token
+    scan(&CurrentToken);
+
+    // Parse code
+    ASTnode *tree = expression();
+
+    // Generate code
+    gencode(tree);
+
+    // Close files
+    fclose(InputFile);
+    fclose(OutFile);
+
+    return 0;
 }

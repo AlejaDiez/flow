@@ -35,7 +35,7 @@ static int putback(int c)
 }
 
 // Get the next character from the input
-static int next()
+static int next(void)
 {
     int c;
 
@@ -53,7 +53,7 @@ static int next()
 }
 
 // Skip any input that we don't need to deal with
-static int skip()
+static int skip(void)
 {
     int c;
 
@@ -139,7 +139,7 @@ int scan(Token *t)
             t->value.integer = scanint(c);
             break;
         }
-        fprintf(stderr, "Syntax Error: unrecognized character '%c' at line %d column %d\n", c, Line, Column);
+        fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
         exit(1);
     }
     return 1;

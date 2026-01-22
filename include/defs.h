@@ -2,15 +2,16 @@
 #define DEFS_H
 
 #define NO_VALUE (Value){0}
+#define NO_REG -1
 
 // Values
-typedef union
+typedef union Value
 {
     int integer;
 } Value;
 
 // Tokens
-typedef enum
+typedef enum TokenType
 {
     T_EOF,
     // Arithmetic Operators
@@ -22,10 +23,30 @@ typedef enum
     T_INTLIT
 } TokenType;
 
-typedef struct
+typedef struct Token
 {
     TokenType type;
     Value value;
 } Token;
+
+// Abstract Syntax Tree
+typedef enum ASTnodeType
+{
+    // Arithmetic Operations
+    A_ADD,
+    A_SUB,
+    A_MUL,
+    A_DIV,
+    // Literals
+    A_INTLIT
+} ASTnodeType;
+
+typedef struct ASTnode
+{
+    ASTnodeType type;
+    struct ASTnode *left;
+    struct ASTnode *right;
+    Value value;
+} ASTnode;
 
 #endif
