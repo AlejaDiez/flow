@@ -36,9 +36,6 @@ void init()
 
 int main(int argc, char *argv[])
 {
-    ASTnode *tree;
-    int result;
-
     if (argc != 2)
     {
         fprintf(stderr, "Error: not input file\n");
@@ -47,19 +44,32 @@ int main(int argc, char *argv[])
 
     init();
 
+    // Open input file
     if ((InputFile = fopen(argv[1], "r")) == NULL)
     {
         fprintf(stderr, "Error: cannot open input file %s\n", argv[1]);
         exit(1);
     }
 
+    // Create a new output file
+    if ((OutFile = fopen("out.s", "w")) == NULL)
+    {
+        fprintf(stderr, "Error: cannot create output file\n");
+        exit(1);
+    }
+
     // Load first token
     scan(&CurrentToken);
 
-    tree = expression();
-    result = interpretAST(tree);
+    // Parse code
+    ASTnode *tree = expression();
 
-    printf("Result: %d\n", result);
+    // Generate code
+    gencode(tree);
+
+    // Close files
+    fclose(InputFile);
+    fclose(OutFile);
 
     return 0;
 }

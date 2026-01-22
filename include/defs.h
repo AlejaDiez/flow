@@ -2,6 +2,7 @@
 #define DEFS_H
 
 #define NO_VALUE (Value){0}
+#define NO_REG -1
 
 // Values
 typedef union Value

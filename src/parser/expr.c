@@ -59,8 +59,7 @@ static ASTnode *primary(void)
     }
 }
 
-// Parse a binary expression
-// ptp: Previous Token Precedence
+// Parse a binary expression, ptp (Previous Token Precedence)
 static ASTnode *binary(int ptp)
 {
     ASTnode *left, *right;

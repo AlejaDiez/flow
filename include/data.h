@@ -12,5 +12,6 @@ extern_ int Length;  // Length of current token
 extern_ Token CurrentToken;
 
 extern_ FILE *InputFile; // Current input file
+extern_ FILE *OutFile;   // Current output file
 
 #endif
