@@ -35,10 +35,22 @@ static void cg_postamble(void)
     return arm64_postamble();
 }
 
-// Wrapper function for load an integer literal into a register, returns the register number
-static int cg_load(int value)
+// Wrapper function for store a register value in a global variable and return the register number
+static int cg_storglob(int r, int id)
 {
-    return arm64_load(value);
+    return arm64_storglob(r, id);
+}
+
+// Wrapper function for load a global variable into a register and return the register number
+static int cg_loadglob(int id)
+{
+    return arm64_loadglob(id);
+}
+
+// Wrapper function for load an integer literal into a register, returns the register number
+static int cg_loadint(int value)
+{
+    return arm64_loadint(value);
 }
 
 // Wrapper function for add two registers
@@ -78,8 +90,6 @@ static void cg_data_seg(void)
 }
 
 // Generic AST walker to generate assembly code, returns the register number containing the result of the sub-tree
-// Generic AST walker to generate assembly code.
-// Returns the register number containing the result of the sub-tree.
 static int genAST(ASTnode *n)
 {
     int leftreg, rightreg;
@@ -88,6 +98,27 @@ static int genAST(ASTnode *n)
     if (n == NULL)
     {
         return NO_REG;
+    }
+
+    // Handle special cases
+    switch (n->type)
+    {
+    case A_SEQ:
+        // Generate the left AST node
+        leftreg = genAST(n->left);
+        if (leftreg != NO_REG)
+        {
+            arm64_free_register(leftreg);
+        }
+        // Generate the right AST node
+        rightreg = genAST(n->right);
+        return rightreg;
+    case A_ASSIGN:
+        // R-Value
+        rightreg = genAST(n->right);
+        return cg_storglob(rightreg, n->left->value.integer);
+    default:
+        break;
     }
 
     // Generate the left AST node
@@ -112,12 +143,23 @@ static int genAST(ASTnode *n)
         return cg_mul(leftreg, rightreg);
     case A_DIV:
         return cg_div(leftreg, rightreg);
+    case A_IDENT:
+        return cg_loadglob(n->value.integer);
     case A_INTLIT:
-        return cg_load(n->value.integer);
+        return cg_loadint(n->value.integer);
+    case A_PRINT:
+        cg_printint(leftreg);
+        return NO_REG;
     default:
         fprintf(stderr, "Compile Error: unknown AST node type\n");
         exit(1);
     }
+}
+
+// Wrapper function for generate the assembly code for a global symbol
+void genglobsym(int id)
+{
+    return arm64_globsym(id);
 }
 
 // Generate the assembly code for the entire program
@@ -127,7 +169,10 @@ void gencode(ASTnode *n)
 
     cg_preamble();
     reg = genAST(n);
-    cg_printint(reg);
+    if (reg != NO_REG)
+    {
+        arm64_free_register(reg);
+    }
     cg_postamble();
     cg_data_seg();
 }

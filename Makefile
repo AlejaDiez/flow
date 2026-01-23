@@ -24,12 +24,14 @@ test: clean all
 	@if [ -z "${TEST}" ]; then \
 		echo "Error: no arguments provided, run using 'make test TEST=test_name'"; \
 	else \
+		clear; \
 		./${TARGET} ./tests/${TEST}.flow; \
 		if [ $$? -eq 0 ]; then \
-			clang -arch x86_64 -o ./tests/${TEST} ./tests/${TEST}.s; \
+			gcc ./out.s -o ./out; \
+			rm -f ./out.s; \
 			if [ $$? -eq 0 ]; then \
-				echo ""; \
-				./tests/${TEST}; \
+				./out; \
+				rm -f ./out; \
 			fi; \
 		fi; \
 	fi

@@ -1,1 +1,11 @@
-3 + 4 - 8 * 6
+var x: int;
+var y: int;
+var z: int;
+
+x = 10;
+y = 5;
+z = 2;
+
+print(x);
+print(y * z);
+print((x + y) * z);

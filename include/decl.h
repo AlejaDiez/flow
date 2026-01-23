@@ -2,6 +2,7 @@
 #define DECL_H
 
 // Code
+void genglobsym(int id);
 void gencode(ASTnode *n);
 /// arm64.c
 void arm64_freeall_registers(void);
@@ -9,7 +10,10 @@ void arm64_free_register(int r);
 int arm64_alloc_register(void);
 void arm64_preamble(void);
 void arm64_postamble(void);
-int arm64_load(int value);
+void arm64_globsym(int id);
+int arm64_storglob(int r, int id);
+int arm64_loadglob(int id);
+int arm64_loadint(int value);
 int arm64_add(int r1, int r2);
 int arm64_sub(int r1, int r2);
 int arm64_mul(int r1, int r2);
@@ -18,12 +22,17 @@ void arm64_printint(int r);
 void arm64_data_seg(void);
 
 // Parser
+void var_declaration(void);
 ASTnode *expression(void);
+ASTnode *compound_statement(void);
 
 // Scanner
 int scan(Token *t);
+void match(TokenType t, char *what);
 
 // Utils
+int findglob(char *s);
+int addglob(char *name);
 ASTnode *mkastnode(ASTnodeType type, ASTnode *left, ASTnode *right, Value value);
 ASTnode *mkastleaf(ASTnodeType type, Value value);
 ASTnode *mkastunary(ASTnodeType type, ASTnode *child, Value value);

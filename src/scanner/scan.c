@@ -8,7 +8,7 @@
 #include "decl.h"
 
 // Return the position of character c in string s, or -1 if not found
-static int chrpos(const char *s, int c)
+static int chrpos(char *s, int c)
 {
     const char *p;
 
@@ -98,6 +98,59 @@ static int scanint(int c)
     return val;
 }
 
+// Scan an identifier
+static int scanident(int c, char *buf, int lim)
+{
+    int i = 0;
+
+    // Scan until we hit a character that isn't a letter, digit or underscore
+    while (isalpha(c) || isdigit(c) || c == '_')
+    {
+        if (lim - 1 == i)
+        {
+            fprintf(stderr, "Error: out of memory (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+        else if (i < lim - 1)
+        {
+            buf[i++] = c;
+        }
+        c = next();
+    }
+    // Put back the character that stopped the loop
+    putback(c);
+    buf[i] = '\0';
+
+    return i;
+}
+
+// Check if the identifier is a keyword and return the keyword token
+static int keyword(char *s)
+{
+    switch (*s)
+    {
+    case 'p':
+        if (!strcmp(s, "print"))
+        {
+            return T_PRINT;
+        }
+        break;
+    case 'i':
+        if (!strcmp(s, "int"))
+        {
+            return T_INT;
+        }
+        break;
+    case 'v':
+        if (!strcmp(s, "var"))
+        {
+            return T_VAR;
+        }
+        break;
+    }
+    return T_IDENT;
+}
+
 // Scan the next token from the input, and put it in the Token structure
 int scan(Token *t)
 {
@@ -131,6 +184,34 @@ int scan(Token *t)
         t->type = T_SLASH;
         t->value = NO_VALUE;
         break;
+    case '=':
+        t->type = T_ASSIGN;
+        t->value = NO_VALUE;
+        break;
+    case ':':
+        t->type = T_COLON;
+        t->value = NO_VALUE;
+        break;
+    case ';':
+        t->type = T_SEMICOLON;
+        t->value = NO_VALUE;
+        break;
+    case '(':
+        t->type = T_LPAREN;
+        t->value = NO_VALUE;
+        break;
+    case ')':
+        t->type = T_RPAREN;
+        t->value = NO_VALUE;
+        break;
+    case '{':
+        t->type = T_LBRACE;
+        t->value = NO_VALUE;
+        break;
+    case '}':
+        t->type = T_RBRACE;
+        t->value = NO_VALUE;
+        break;
     default:
         // If it's a digit, scan the integer literal
         if (isdigit(c))
@@ -139,8 +220,38 @@ int scan(Token *t)
             t->value.integer = scanint(c);
             break;
         }
+        // If it's a letter or underscore, scan the identifier
+        else if (isalpha(c) || '_' == c)
+        {
+            char buffer[MAX_LEN];
+
+            scanident(c, buffer, MAX_LEN - 1);
+
+            int tokentype = keyword(buffer);
+
+            t->type = tokentype;
+            if (tokentype == T_IDENT)
+            {
+                t->value.string = strdup(buffer);
+            }
+            break;
+        }
         fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
         exit(1);
     }
     return 1;
+}
+
+// Check that the current token is 't', and fetch the next one.
+void match(TokenType t, char *what)
+{
+    if (CurrentToken.type == t)
+    {
+        scan(&CurrentToken);
+    }
+    else
+    {
+        fprintf(stderr, "Syntax Error: expected %s but found other token (%d:%d)\n", what, Line, Column);
+        exit(1);
+    }
 }
