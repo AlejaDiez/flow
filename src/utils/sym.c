@@ -22,7 +22,7 @@ int findglob(char *s)
 }
 
 // Add a new symbol to the global symbol table and return its index
-int addglob(char *name)
+int addglob(char *name, PType ptype)
 {
     int y;
 
@@ -33,7 +33,7 @@ int addglob(char *name)
 
     if (Globals >= MAX_SYM)
     {
-        fprintf(stderr, "Error: too many global symbols\n");
+        fprintf(stderr, "Error: too many global symbols");
         exit(1);
     }
 
@@ -41,6 +41,7 @@ int addglob(char *name)
 
     strncpy(GlobalSymbols[y].name, name, MAX_LEN);
     GlobalSymbols[y].name[MAX_LEN - 1] = '\0';
+    GlobalSymbols[y].type = ptype;
 
     return y;
 }

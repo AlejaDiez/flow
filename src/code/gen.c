@@ -77,6 +77,24 @@ static int cg_div(int r1, int r2)
     return arm64_div(r1, r2);
 }
 
+// Wrapper function for compare two registers
+static int cg_cmp(int r1, int r2, char *op)
+{
+    return arm64_cmp(r1, r2, op);
+}
+
+// Wrapper function for AND bitwise between two registers
+static int cg_and(int r1, int r2)
+{
+    return arm64_and(r1, r2);
+}
+
+// Wrapper function for OR bitwise between two registers
+static int cg_or(int r1, int r2)
+{
+    return arm64_or(r1, r2);
+}
+
 // Wrapper function for print a register value using C library's printf
 static void cg_printint(int r)
 {
@@ -143,10 +161,30 @@ static int genAST(ASTnode *n)
         return cg_mul(leftreg, rightreg);
     case A_DIV:
         return cg_div(leftreg, rightreg);
+    case A_EQ:
+        return cg_cmp(leftreg, rightreg, "eq");
+    case A_NEQ:
+        return cg_cmp(leftreg, rightreg, "ne");
+    case A_LT:
+        return cg_cmp(leftreg, rightreg, "lt");
+    case A_LE:
+        return cg_cmp(leftreg, rightreg, "le");
+    case A_GT:
+        return cg_cmp(leftreg, rightreg, "gt");
+    case A_GE:
+        return cg_cmp(leftreg, rightreg, "ge");
+    case A_AND:
+        return cg_and(leftreg, rightreg);
+    case A_OR:
+        return cg_or(leftreg, rightreg);
     case A_IDENT:
         return cg_loadglob(n->value.integer);
     case A_INTLIT:
         return cg_loadint(n->value.integer);
+    case A_TRUE:
+        return cg_loadint(1);
+    case A_FALSE:
+        return cg_loadint(0);
     case A_PRINT:
         cg_printint(leftreg);
         return NO_REG;

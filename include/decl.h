@@ -18,6 +18,9 @@ int arm64_add(int r1, int r2);
 int arm64_sub(int r1, int r2);
 int arm64_mul(int r1, int r2);
 int arm64_div(int r1, int r2);
+int arm64_cmp(int r1, int r2, char *op);
+int arm64_and(int r1, int r2);
+int arm64_or(int r1, int r2);
 void arm64_printint(int r);
 void arm64_data_seg(void);
 
@@ -32,9 +35,8 @@ void match(TokenType t, char *what);
 
 // Utils
 int findglob(char *s);
-int addglob(char *name);
-ASTnode *mkastnode(ASTnodeType type, ASTnode *left, ASTnode *right, Value value);
-ASTnode *mkastleaf(ASTnodeType type, Value value);
+int addglob(char *name, PType ptype);
+ASTnode *mkastleaf(ASTnodeType type, PType ptype, Value value);
 ASTnode *mkastunary(ASTnodeType type, ASTnode *child, Value value);
 ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value value);
 

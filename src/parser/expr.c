@@ -18,6 +18,22 @@ static ASTnodeType arithop(TokenType tokentype)
         return A_MUL;
     case T_SLASH:
         return A_DIV;
+    case T_EQ:
+        return A_EQ;
+    case T_NEQ:
+        return A_NEQ;
+    case T_LT:
+        return A_LT;
+    case T_GT:
+        return A_GT;
+    case T_LE:
+        return A_LE;
+    case T_GE:
+        return A_GE;
+    case T_AND:
+        return A_AND;
+    case T_OR:
+        return A_OR;
     default:
         fprintf(stderr, "Syntax Error: unrecognized token (%d:%d)\n", Line, Column);
         exit(1);
@@ -31,10 +47,21 @@ static int op_precedence(TokenType tokentype)
     {
     case T_STAR:
     case T_SLASH:
-        return 4;
+        return 5;
     case T_PLUS:
     case T_MINUS:
+        return 4;
+    case T_EQ:
+    case T_NEQ:
+    case T_LT:
+    case T_GT:
+    case T_LE:
+    case T_GE:
         return 3;
+    case T_AND:
+        return 2;
+    case T_OR:
+        return 1;
     default:
         fprintf(stderr, "Syntax Error: expected an operator but another token was found (%d:%d)\n", Line, Column);
         exit(1);
@@ -57,11 +84,19 @@ static ASTnode *primary(void)
             fprintf(stderr, "Syntax Error: undeclared variable '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
             exit(1);
         }
-        n = mkastleaf(A_IDENT, (Value){id});
+        n = mkastleaf(A_IDENT, GlobalSymbols[id].type, (Value){id});
         scan(&CurrentToken);
         return n;
     case T_INTLIT:
-        n = mkastleaf(A_INTLIT, CurrentToken.value);
+        n = mkastleaf(A_INTLIT, P_INT, CurrentToken.value);
+        scan(&CurrentToken);
+        return n;
+    case T_TRUE:
+        n = mkastleaf(A_TRUE, P_BOOL, (Value){1});
+        scan(&CurrentToken);
+        return n;
+    case T_FALSE:
+        n = mkastleaf(A_FALSE, P_BOOL, (Value){0});
         scan(&CurrentToken);
         return n;
     case T_LPAREN:

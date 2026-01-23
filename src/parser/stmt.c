@@ -10,6 +10,7 @@ static ASTnode *assignment_statement(void)
 {
     ASTnode *n, *left, *right;
     int id;
+    PType type;
 
     // L-Value
     if (CurrentToken.type != T_IDENT)
@@ -25,7 +26,9 @@ static ASTnode *assignment_statement(void)
         fprintf(stderr, "Syntax Error: undeclared variable '%s' (%d:%d)\n", CurrentToken.value.string, Line, Column);
         exit(1);
     }
-    left = mkastleaf(A_IDENT, (Value){id});
+
+    type = GlobalSymbols[id].type;
+    left = mkastleaf(A_IDENT, type, (Value){id});
     scan(&CurrentToken);
 
     // Match the sintax
@@ -36,6 +39,8 @@ static ASTnode *assignment_statement(void)
 
     // Create the AST
     n = mkastbinary(A_ASSIGN, left, right, NO_VALUE);
+
+    // TODO: Check type
     return n;
 }
 
@@ -101,7 +106,7 @@ ASTnode *compound_statement(void)
             }
             else
             {
-                seq = mkastnode(A_SEQ, seq, stmt, NO_VALUE);
+                seq = mkastbinary(A_SEQ, seq, stmt, NO_VALUE);
             }
         }
     }

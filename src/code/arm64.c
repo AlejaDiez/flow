@@ -6,6 +6,7 @@
 
 // Register list
 static char *reglist[4] = {"x0", "x1", "x2", "x3"};
+static char *wreglist[4] = {"w0", "w1", "w2", "w3"};
 // Register availability
 static int freeregs[4];
 
@@ -64,31 +65,66 @@ void arm64_postamble(void)
 // Generate the assembly code for a global symbol
 void arm64_globsym(int id)
 {
-    fprintf(OutFile, "\t.comm %s, 8, 3\n", GlobalSymbols[id].name);
+    int type = GlobalSymbols[id].type;
+
+    switch (type)
+    {
+    case P_INT:
+        fprintf(OutFile, "\t.comm %s, 8, 3\n", GlobalSymbols[id].name);
+        break;
+    case P_BOOL:
+        fprintf(OutFile, "\t.comm %s, 1, 0\n", GlobalSymbols[id].name);
+        break;
+    default:
+        break;
+    }
 }
 
 // Store a register value in a global variable and return the register number
 int arm64_storglob(int r, int id)
 {
+    int type = GlobalSymbols[id].type;
     int r_addr = arm64_alloc_register();
 
     fprintf(OutFile, "\tadrp %s, %s@PAGE\n", reglist[r_addr], GlobalSymbols[id].name);
     fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r_addr], reglist[r_addr], GlobalSymbols[id].name);
-    fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[r_addr]);
+
+    switch (type)
+    {
+    case P_INT:
+        fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[r_addr]);
+        break;
+    case P_BOOL:
+        fprintf(OutFile, "\tstrb %s, [%s]\n", wreglist[r], reglist[r_addr]);
+        break;
+    default:
+        break;
+    }
 
     arm64_free_register(r_addr);
-
     return r;
 }
 
 // Load a global variable into a register and return the register number
 int arm64_loadglob(int id)
 {
+    int type = GlobalSymbols[id].type;
     int r = arm64_alloc_register();
 
     fprintf(OutFile, "\tadrp %s, %s@PAGE\n", reglist[r], GlobalSymbols[id].name);
     fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r], reglist[r], GlobalSymbols[id].name);
-    fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]);
+
+    switch (type)
+    {
+    case P_INT:
+        fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]);
+        break;
+    case P_BOOL:
+        fprintf(OutFile, "\tldrb %s, [%s]\n", wreglist[r], reglist[r]);
+        break;
+    default:
+        break;
+    }
 
     return r;
 }
@@ -130,6 +166,37 @@ int arm64_mul(int r1, int r2)
 int arm64_div(int r1, int r2)
 {
     fprintf(OutFile, "\tsdiv %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
+    arm64_free_register(r1);
+    return r2;
+}
+
+// Compare two registers
+// eq: ==
+// ne: !=
+// lt: <
+// le: <=
+// gt: >
+// ge: >=
+int arm64_cmp(int r1, int r2, char *op)
+{
+    fprintf(OutFile, "\tcmp %s, %s\n", reglist[r1], reglist[r2]);
+    fprintf(OutFile, "\tcset %s, %s\n", reglist[r2], op);
+    arm64_free_register(r1);
+    return r2;
+}
+
+// AND bitwise between two registers
+int arm64_and(int r1, int r2)
+{
+    fprintf(OutFile, "\tand %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
+    arm64_free_register(r1);
+    return r2;
+}
+
+// OR bitwise between two registers
+int arm64_or(int r1, int r2)
+{
+    fprintf(OutFile, "\torr %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
     arm64_free_register(r1);
     return r2;
 }
