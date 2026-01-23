@@ -36,7 +36,7 @@ static int op_precedence(TokenType tokentype)
     case T_MINUS:
         return 3;
     default:
-        fprintf(stderr, "Syntax Error: expected an operator, but another token was found (%d:%d)\n", Line, Column);
+        fprintf(stderr, "Syntax Error: expected an operator but another token was found (%d:%d)\n", Line, Column);
         exit(1);
     }
 }
@@ -45,16 +45,32 @@ static int op_precedence(TokenType tokentype)
 static ASTnode *primary(void)
 {
     ASTnode *n;
+    int id;
 
     // Check the type of the token
     switch (CurrentToken.type)
     {
+    case T_IDENT:
+        id = findglob(CurrentToken.value.string);
+        if (id == -1)
+        {
+            fprintf(stderr, "Syntax Error: undeclared variable '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
+            exit(1);
+        }
+        n = mkastleaf(A_IDENT, (Value){id});
+        scan(&CurrentToken);
+        return n;
     case T_INTLIT:
         n = mkastleaf(A_INTLIT, CurrentToken.value);
         scan(&CurrentToken);
         return n;
+    case T_LPAREN:
+        match(T_LPAREN, "(");
+        n = expression();
+        match(T_RPAREN, ")");
+        return n;
     default:
-        fprintf(stderr, "Syntax Error: expected a math expression, but another token was found (%d:%d)\n", Line, Column);
+        fprintf(stderr, "Syntax Error: expected a math expression but another token was found (%d:%d)\n", Line, Column);
         exit(1);
     }
 }
@@ -69,11 +85,7 @@ static ASTnode *binary(int ptp)
     left = primary();
     // Check the token precedence if it is higher than the previous one
     tokentype = CurrentToken.type;
-    if (tokentype == T_EOF)
-    {
-        return left;
-    }
-    while (op_precedence(tokentype) > ptp)
+    while (!(tokentype == T_SEMICOLON || tokentype == T_RPAREN) && op_precedence(tokentype) > ptp)
     {
         // Read next token
         scan(&CurrentToken);
@@ -83,10 +95,6 @@ static ASTnode *binary(int ptp)
         left = mkastbinary(arithop(tokentype), left, right, NO_VALUE);
         // Update the type
         tokentype = CurrentToken.type;
-        if (tokentype == T_EOF)
-        {
-            return left;
-        }
     }
     return left;
 }

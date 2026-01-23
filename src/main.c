@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     scan(&CurrentToken);
 
     // Parse code
-    ASTnode *tree = expression();
+    ASTnode *tree = compound_statement();
 
     // Generate code
     gencode(tree);
