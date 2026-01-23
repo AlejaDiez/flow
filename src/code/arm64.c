@@ -62,6 +62,18 @@ void arm64_postamble(void)
     fprintf(OutFile, "\tret\n");
 }
 
+// Generate a label
+void arm64_label(int l)
+{
+    fprintf(OutFile, "L%d:\n", l);
+}
+
+// Generate a jump to a label
+void arm64_jump(int l)
+{
+    fprintf(OutFile, "\tb L%d\n", l);
+}
+
 // Generate the assembly code for a global symbol
 void arm64_globsym(int id)
 {
@@ -138,7 +150,7 @@ int arm64_loadint(int value)
     return r;
 }
 
-// Add two registers
+// Addition operation between two registers
 int arm64_add(int r1, int r2)
 {
     fprintf(OutFile, "\tadd %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
@@ -146,7 +158,7 @@ int arm64_add(int r1, int r2)
     return r2;
 }
 
-// Subtract two registers
+// Subtraction operation between two registers
 int arm64_sub(int r1, int r2)
 {
     fprintf(OutFile, "\tsub %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
@@ -154,7 +166,7 @@ int arm64_sub(int r1, int r2)
     return r2;
 }
 
-// Multiply two registers
+// Multiplication operation between two registers
 int arm64_mul(int r1, int r2)
 {
     fprintf(OutFile, "\tmul %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
@@ -162,7 +174,7 @@ int arm64_mul(int r1, int r2)
     return r2;
 }
 
-// Divide two registers
+// Division operation between two registers
 int arm64_div(int r1, int r2)
 {
     fprintf(OutFile, "\tsdiv %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
@@ -170,7 +182,48 @@ int arm64_div(int r1, int r2)
     return r2;
 }
 
-// Compare two registers
+// Floor division operation between two registers
+int arm64_fdiv(int r1, int r2)
+{
+    fprintf(OutFile, "\tsdiv %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
+    arm64_free_register(r1);
+    return r2;
+}
+
+// Modulo operation between two registers
+int arm64_mod(int r1, int r2)
+{
+    int r_quot = arm64_alloc_register();
+
+    fprintf(OutFile, "\tsdiv %s, %s, %s\n", reglist[r_quot], reglist[r1], reglist[r2]);
+    fprintf(OutFile, "\tmsub %s, %s, %s, %s\n", reglist[r2], reglist[r_quot], reglist[r2], reglist[r1]);
+    arm64_free_register(r1);
+    arm64_free_register(r_quot);
+    return r2;
+}
+
+// Power operation between two registers
+int arm64_pow(int r1, int r2)
+{
+    int Lloop = label();
+    int Lend = label();
+    int r_res = arm64_alloc_register();
+
+    fprintf(OutFile, "\tmov %s, #1\n", reglist[r_res]);
+    arm64_label(Lloop);
+    fprintf(OutFile, "\tcbz %s, L%d\n", reglist[r2], Lend);
+    fprintf(OutFile, "\tmul %s, %s, %s\n", reglist[r_res], reglist[r_res], reglist[r1]);
+    fprintf(OutFile, "\tsub %s, %s, #1\n", reglist[r2], reglist[r2]);
+    arm64_jump(Lloop);
+    arm64_label(Lend);
+    fprintf(OutFile, "\tmov %s, %s\n", reglist[r2], reglist[r_res]);
+    arm64_free_register(r1);
+    arm64_free_register(r_res);
+
+    return r2;
+}
+
+// Comparison operation between two registers
 // eq: ==
 // ne: !=
 // lt: <
@@ -185,7 +238,7 @@ int arm64_cmp(int r1, int r2, char *op)
     return r2;
 }
 
-// AND bitwise between two registers
+// AND bitwise operation between two registers
 int arm64_and(int r1, int r2)
 {
     fprintf(OutFile, "\tand %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
@@ -193,7 +246,7 @@ int arm64_and(int r1, int r2)
     return r2;
 }
 
-// OR bitwise between two registers
+// OR bitwise operation between two registers
 int arm64_or(int r1, int r2)
 {
     fprintf(OutFile, "\torr %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);

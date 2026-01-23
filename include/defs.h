@@ -30,7 +30,10 @@ typedef enum TokenType
     T_PLUS,
     T_MINUS,
     T_STAR,
+    T_DSTAR,
     T_SLASH,
+    T_DSLASH,
+    T_PERCENT,
     // Comparison Operators
     T_EQ,
     T_NEQ,
@@ -79,6 +82,9 @@ typedef enum ASTnodeType
     A_SUB,
     A_MUL,
     A_DIV,
+    A_FDIV,
+    A_MOD,
+    A_POW,
     // Comparison Operations
     A_EQ,
     A_NEQ,

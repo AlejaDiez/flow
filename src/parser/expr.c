@@ -18,6 +18,12 @@ static ASTnodeType arithop(TokenType tokentype)
         return A_MUL;
     case T_SLASH:
         return A_DIV;
+    case T_DSLASH:
+        return A_FDIV;
+    case T_PERCENT:
+        return A_MOD;
+    case T_DSTAR:
+        return A_POW;
     case T_EQ:
         return A_EQ;
     case T_NEQ:
@@ -45,8 +51,12 @@ static int op_precedence(TokenType tokentype)
 {
     switch (tokentype)
     {
+    case T_DSTAR:
+        return 6;
     case T_STAR:
     case T_SLASH:
+    case T_DSLASH:
+    case T_PERCENT:
         return 5;
     case T_PLUS:
     case T_MINUS:

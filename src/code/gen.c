@@ -35,6 +35,18 @@ static void cg_postamble(void)
     return arm64_postamble();
 }
 
+// Wrapper function for generate a label
+static void cg_label(int l)
+{
+    return arm64_label(l);
+}
+
+// Wrapper function for generate a jump to a label
+static void cg_jump(int l)
+{
+    return arm64_jump(l);
+}
+
 // Wrapper function for store a register value in a global variable and return the register number
 static int cg_storglob(int r, int id)
 {
@@ -53,43 +65,61 @@ static int cg_loadint(int value)
     return arm64_loadint(value);
 }
 
-// Wrapper function for add two registers
+// Wrapper for addition operation between two registers
 static int cg_add(int r1, int r2)
 {
     return arm64_add(r1, r2);
 }
 
-// Wrapper function for subtract two registers
+// Wrapper for subtraction operation between two registers
 static int cg_sub(int r1, int r2)
 {
     return arm64_sub(r1, r2);
 }
 
-// Wrapper function for multiply two registers
+// Wrapper for multiplication operation between two registers
 static int cg_mul(int r1, int r2)
 {
     return arm64_mul(r1, r2);
 }
 
-// Wrapper function for divide two registers
+// Wrapper for division operation between two registers
 static int cg_div(int r1, int r2)
 {
     return arm64_div(r1, r2);
 }
 
-// Wrapper function for compare two registers
+// Wrapper for floor division operation between two registers
+static int cg_fdiv(int r1, int r2)
+{
+    return arm64_fdiv(r1, r2);
+}
+
+// Wrapper for modulo operation between two registers
+static int cg_mod(int r1, int r2)
+{
+    return arm64_mod(r1, r2);
+}
+
+// Wrapper for power operation between two registers
+static int cg_pow(int r1, int r2)
+{
+    return arm64_pow(r1, r2);
+}
+
+// Wrapper for comparison operation between two registers
 static int cg_cmp(int r1, int r2, char *op)
 {
     return arm64_cmp(r1, r2, op);
 }
 
-// Wrapper function for AND bitwise between two registers
+// Wrapper for AND bitwise operation between two registers
 static int cg_and(int r1, int r2)
 {
     return arm64_and(r1, r2);
 }
 
-// Wrapper function for OR bitwise between two registers
+// Wrapper for OR bitwise operation between two registers
 static int cg_or(int r1, int r2)
 {
     return arm64_or(r1, r2);
@@ -161,6 +191,12 @@ static int genAST(ASTnode *n)
         return cg_mul(leftreg, rightreg);
     case A_DIV:
         return cg_div(leftreg, rightreg);
+    case A_FDIV:
+        return cg_fdiv(leftreg, rightreg);
+    case A_MOD:
+        return cg_mod(leftreg, rightreg);
+    case A_POW:
+        return cg_pow(leftreg, rightreg);
     case A_EQ:
         return cg_cmp(leftreg, rightreg, "eq");
     case A_NEQ:

@@ -195,11 +195,33 @@ int scan(Token *t)
         t->value = NO_VALUE;
         break;
     case '*':
-        t->type = T_STAR;
-        t->value = NO_VALUE;
+        if ((c = next()) == '*')
+        {
+            t->type = T_DSTAR;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_STAR;
+            t->value = NO_VALUE;
+        }
         break;
     case '/':
-        t->type = T_SLASH;
+        if ((c = next()) == '/')
+        {
+            t->type = T_DSLASH;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_SLASH;
+            t->value = NO_VALUE;
+        }
+        break;
+    case '%':
+        t->type = T_PERCENT;
         t->value = NO_VALUE;
         break;
     case '=':

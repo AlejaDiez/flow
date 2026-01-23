@@ -51,6 +51,9 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
     case A_SUB:
     case A_MUL:
     case A_DIV:
+    case A_FDIV:
+    case A_MOD:
+    case A_POW:
         // Check left type
         if (left->ptype != P_INT)
         {
