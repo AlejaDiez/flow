@@ -33,7 +33,6 @@ void arm64_printint(int r);
 void arm64_data_seg(void);
 
 // Parser
-void var_declaration(void);
 ASTnode *expression(void);
 ASTnode *compound_statement(void);
 

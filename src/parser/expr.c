@@ -22,7 +22,6 @@ static ASTnodeType unaryop(TokenType tokentype)
     }
 }
 
-
 // Binary operator to AST node
 static ASTnodeType binaryop(TokenType tokentype)
 {
