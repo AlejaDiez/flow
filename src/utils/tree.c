@@ -37,6 +37,23 @@ ASTnode *mkastunary(ASTnodeType type, ASTnode *child, Value value)
 {
     switch (type)
     {
+    case A_POS:
+    case A_NEG:
+        // Check type
+        if (child->ptype != P_INT)
+        {
+            fprintf(stderr, "Type Error: operand of unary operation is not a number");
+            exit(1);
+        }
+        return mkastnode(type, P_INT, child, NULL, value);
+    case A_NOT:
+        // Check type
+        if (child->ptype != P_BOOL)
+        {
+            fprintf(stderr, "Type Error: operand of not operation is not a boolean");
+            exit(1);
+        }
+        return mkastnode(type, P_BOOL, child, NULL, value);
     default:
         return mkastnode(type, NO_PRIM, child, NULL, value);
     }

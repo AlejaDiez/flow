@@ -150,6 +150,13 @@ int arm64_loadint(int value)
     return r;
 }
 
+// Negation operation for one register
+int arm64_neg(int r)
+{
+    fprintf(OutFile, "\tneg %s, %s\n", reglist[r], reglist[r]);
+    return r;
+}
+
 // Addition operation between two registers
 int arm64_add(int r1, int r2)
 {
@@ -252,6 +259,13 @@ int arm64_or(int r1, int r2)
     fprintf(OutFile, "\torr %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
     arm64_free_register(r1);
     return r2;
+}
+
+// NOT operation for one register
+int arm64_not(int r)
+{
+    fprintf(OutFile, "\teor %s, %s, #1\n", reglist[r], reglist[r]);
+    return r;
 }
 
 // Print a register value using C library's printf

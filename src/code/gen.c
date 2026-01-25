@@ -65,6 +65,12 @@ static int cg_loadint(int value)
     return arm64_loadint(value);
 }
 
+// Wrapper function for negation operation for one register
+static int cg_neg(int r)
+{
+    return arm64_neg(r);
+}
+
 // Wrapper for addition operation between two registers
 static int cg_add(int r1, int r2)
 {
@@ -125,6 +131,12 @@ static int cg_or(int r1, int r2)
     return arm64_or(r1, r2);
 }
 
+// Wrapper function for negation operation for one register
+static int cg_not(int r)
+{
+    return arm64_not(r);
+}
+
 // Wrapper function for print a register value using C library's printf
 static void cg_printint(int r)
 {
@@ -183,6 +195,10 @@ static int genAST(ASTnode *n)
     // Handle the different AST node types
     switch (n->type)
     {
+    case A_POS:
+        return leftreg;
+    case A_NEG:
+        return cg_neg(leftreg);
     case A_ADD:
         return cg_add(leftreg, rightreg);
     case A_SUB:
@@ -213,6 +229,8 @@ static int genAST(ASTnode *n)
         return cg_and(leftreg, rightreg);
     case A_OR:
         return cg_or(leftreg, rightreg);
+    case A_NOT:
+        return cg_not(leftreg);
     case A_IDENT:
         return cg_loadglob(n->value.integer);
     case A_INTLIT:

@@ -17,6 +17,7 @@ void arm64_globsym(int id);
 int arm64_storglob(int r, int id);
 int arm64_loadglob(int id);
 int arm64_loadint(int value);
+int arm64_neg(int r);
 int arm64_add(int r1, int r2);
 int arm64_sub(int r1, int r2);
 int arm64_mul(int r1, int r2);
@@ -27,6 +28,7 @@ int arm64_pow(int r1, int r2);
 int arm64_cmp(int r1, int r2, char *op);
 int arm64_and(int r1, int r2);
 int arm64_or(int r1, int r2);
+int arm64_not(int r);
 void arm64_printint(int r);
 void arm64_data_seg(void);
 

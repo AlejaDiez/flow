@@ -78,6 +78,8 @@ typedef struct Token
 typedef enum ASTnodeType
 {
     // Arithmetic Operations
+    A_POS,
+    A_NEG,
     A_ADD,
     A_SUB,
     A_MUL,

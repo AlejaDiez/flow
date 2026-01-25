@@ -5,8 +5,26 @@
 #include "data.h"
 #include "decl.h"
 
-// Operator type to AST node type
-static ASTnodeType arithop(TokenType tokentype)
+// Unary operator to AST node
+static ASTnodeType unaryop(TokenType tokentype)
+{
+    switch (tokentype)
+    {
+    case T_PLUS:
+        return A_POS;
+    case T_MINUS:
+        return A_NEG;
+    case T_NOT:
+        return A_NOT;
+    default:
+        fprintf(stderr, "Syntax Error: unrecognized token (%d:%d)\n", Line, Column);
+        exit(1);
+    }
+}
+
+
+// Binary operator to AST node
+static ASTnodeType binaryop(TokenType tokentype)
 {
     switch (tokentype)
     {
@@ -87,6 +105,14 @@ static ASTnode *primary(void)
     // Check the type of the token
     switch (CurrentToken.type)
     {
+    case T_PLUS:
+    case T_MINUS:
+    case T_NOT:
+        id = CurrentToken.type;
+        scan(&CurrentToken);
+        n = primary();
+        n = mkastunary(unaryop(id), n, NO_VALUE);
+        return n;
     case T_IDENT:
         id = findglob(CurrentToken.value.string);
         if (id == -1)
@@ -137,7 +163,7 @@ static ASTnode *binary(int ptp)
         // Parse the right side
         right = binary(op_precedence(tokentype));
         // Create a new AST node
-        left = mkastbinary(arithop(tokentype), left, right, NO_VALUE);
+        left = mkastbinary(binaryop(tokentype), left, right, NO_VALUE);
         // Update the type
         tokentype = CurrentToken.type;
     }
