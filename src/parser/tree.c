@@ -71,13 +71,13 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
     case A_FDIV:
     case A_MOD:
     case A_POW:
-        // Check left type
+        // Check int left type
         if (left->ptype != P_INT)
         {
             fprintf(stderr, "Type Error: left operand of math operation is not a number");
             exit(1);
         }
-        // Check right type
+        // Check int right type
         if (right->ptype != P_INT)
         {
             fprintf(stderr, "Type Error: right operand of math operation is not a number");
@@ -86,6 +86,13 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
         return mkastnode(type, P_INT, left, right, value);
     case A_EQ:
     case A_NEQ:
+        // Check left and right types
+        if (left->ptype != right->ptype)
+        {
+            fprintf(stderr, "Type Error: cannot compare different types");
+            exit(1);
+        }
+        return mkastnode(type, P_BOOL, left, right, value);
     case A_LT:
     case A_GT:
     case A_LE:
@@ -96,13 +103,19 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
             fprintf(stderr, "Type Error: cannot compare different types");
             exit(1);
         }
+        // Check int type
+        if (left->ptype != P_INT)
+        {
+            fprintf(stderr, "Type Error: operators <, >, <=, >= require integer operands");
+            exit(1);
+        }
         return mkastnode(type, P_BOOL, left, right, value);
     case A_AND:
     case A_OR:
-        // Check left and right types
+        // Check bool types
         if (left->ptype != P_BOOL || right->ptype != P_BOOL)
         {
-            fprintf(stderr, "Type Error: && and || require boolean operands");
+            fprintf(stderr, "Type Error: operators && and || require boolean operands");
             exit(1);
         }
         return mkastnode(type, P_BOOL, left, right, value);
