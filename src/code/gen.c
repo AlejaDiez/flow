@@ -5,172 +5,38 @@
 #include "data.h"
 #include "decl.h"
 
-// Wrapper function for set all registers as available
-static void cg_freeall_registers(void)
-{
-    return arm64_freeall_registers();
-}
-
-// Wrapper function for free a register by setting it as available
-static void cg_free_register(int r)
-{
-    return arm64_free_register(r);
-}
-
-// Wrapper function for allocate a free register, return the number of the register.
-static int cg_alloc_register(void)
-{
-    return arm64_alloc_register();
-}
-
-// Wrapper function for write the assembly preamble
-static void cg_preamble(void)
-{
-    return arm64_preamble();
-}
-
-// Wrapper function for write the assembly postamble
-static void cg_postamble(void)
-{
-    return arm64_postamble();
-}
-
-// Wrapper function for generate a label
-static void cg_label(int l)
-{
-    return arm64_label(l);
-}
-
-// Wrapper function for generate a jump to a label
-static void cg_jump(int l)
-{
-    return arm64_jump(l);
-}
-
-// Wrapper function for store a register value in a global variable and return the register number
-static int cg_storglob(int r, int id)
-{
-    return arm64_storglob(r, id);
-}
-
-// Wrapper function for load a global variable into a register and return the register number
-static int cg_loadglob(int id)
-{
-    return arm64_loadglob(id);
-}
-
-// Wrapper function for load an integer literal into a register, returns the register number
-static int cg_loadint(int value)
-{
-    return arm64_loadint(value);
-}
-
-// Wrapper function for negation operation for one register
-static int cg_neg(int r)
-{
-    return arm64_neg(r);
-}
-
-// Wrapper for addition operation between two registers
-static int cg_add(int r1, int r2)
-{
-    return arm64_add(r1, r2);
-}
-
-// Wrapper for subtraction operation between two registers
-static int cg_sub(int r1, int r2)
-{
-    return arm64_sub(r1, r2);
-}
-
-// Wrapper for multiplication operation between two registers
-static int cg_mul(int r1, int r2)
-{
-    return arm64_mul(r1, r2);
-}
-
-// Wrapper for division operation between two registers
-static int cg_div(int r1, int r2)
-{
-    return arm64_div(r1, r2);
-}
-
-// Wrapper for modulo operation between two registers
-static int cg_mod(int r1, int r2)
-{
-    return arm64_mod(r1, r2);
-}
-
-// Wrapper for power operation between two registers
-static int cg_pow(int r1, int r2)
-{
-    return arm64_pow(r1, r2);
-}
-
-// Wrapper for comparison operation between two registers
-static int cg_cmp(int r1, int r2, char *op)
-{
-    return arm64_cmp(r1, r2, op);
-}
-
-// Wrapper for AND bitwise operation between two registers
-static int cg_and(int r1, int r2)
-{
-    return arm64_and(r1, r2);
-}
-
-// Wrapper for OR bitwise operation between two registers
-static int cg_or(int r1, int r2)
-{
-    return arm64_or(r1, r2);
-}
-
-// Wrapper function for negation operation for one register
-static int cg_not(int r)
-{
-    return arm64_not(r);
-}
-
-// Wrapper function for print a register value using C library's printf
-static void cg_printint(int r)
-{
-    return arm64_printint(r);
-}
-
-// Wrapper function for define the data section
-static void cg_data_seg(void)
-{
-    return arm64_data_seg();
-}
-
 // Generic AST walker to generate assembly code, returns the register number containing the result of the sub-tree
-static int genAST(ASTnode *n)
+static int cgAST(ASTnode *n)
 {
-    int leftreg, rightreg;
+    int id, leftreg, rightreg;
 
-    // Handle NULL AST nodes
+    // Empty tree
     if (n == NULL)
     {
         return NO_REG;
     }
 
-    // Handle special cases
     switch (n->type)
     {
+    // SEQUENCES
     case A_SEQ:
-        // Generate the left AST node
-        leftreg = genAST(n->left);
+        leftreg = cgAST(n->left);
         if (leftreg != NO_REG)
         {
-            arm64_free_register(leftreg);
+            CG->free_register(leftreg);
         }
-        // Generate the right AST node
-        rightreg = genAST(n->right);
-        return rightreg;
+        return cgAST(n->right);
+    // LITERALS
+    case A_INTLIT:
+        return CG->loadint(n->value.integer);
+    case A_IDENT:
+        return CG->loadglob(n->value.integer);
+    case A_TRUE:
+        return CG->loadint(1);
+    case A_FALSE:
+        return CG->loadint(0);
+    // ASSIGNMENTS
     case A_ASSIGN:
-        // R-Value
-        rightreg = genAST(n->right);
-        return cg_storglob(rightreg, n->left->value.integer);
     case A_ASADD:
     case A_ASSUB:
     case A_ASMUL:
@@ -179,111 +45,129 @@ static int genAST(ASTnode *n)
     case A_ASPOW:
     case A_ASAND:
     case A_ASOR:
+        id = n->left->value.integer;
         // R-Value
-        rightreg = genAST(n->right);
+        rightreg = cgAST(n->right);
+        if (n->type == A_ASSIGN)
+        {
+            return CG->storglob(rightreg, id);
+        }
         // L-Value
-        leftreg = cg_loadglob(n->left->value.integer);
+        leftreg = CG->loadglob(id);
         switch (n->type)
         {
         case A_ASADD:
-            rightreg = cg_add(leftreg, rightreg);
+            rightreg = CG->add(leftreg, rightreg);
             break;
         case A_ASSUB:
-            rightreg = cg_sub(leftreg, rightreg);
+            rightreg = CG->sub(leftreg, rightreg);
             break;
         case A_ASMUL:
-            rightreg = cg_mul(leftreg, rightreg);
+            rightreg = CG->mul(leftreg, rightreg);
             break;
         case A_ASDIV:
-            rightreg = cg_div(leftreg, rightreg);
+            rightreg = CG->div(leftreg, rightreg);
             break;
         case A_ASMOD:
-            rightreg = cg_mod(leftreg, rightreg);
+            rightreg = CG->mod(leftreg, rightreg);
             break;
         case A_ASPOW:
-            rightreg = cg_pow(leftreg, rightreg);
+            rightreg = CG->pow(leftreg, rightreg);
             break;
         case A_ASAND:
-            rightreg = cg_and(leftreg, rightreg);
+            rightreg = CG->and(leftreg, rightreg);
             break;
         case A_ASOR:
-            rightreg = cg_or(leftreg, rightreg);
+            rightreg = CG->or(leftreg, rightreg);
+            break;
+        default:
+            rightreg = NO_REG;
             break;
         }
-        return cg_storglob(rightreg, n->left->value.integer);
-    default:
-        break;
-    }
-
-    // Generate the left AST node
-    if (n->left)
-    {
-        leftreg = genAST(n->left);
-    }
-    // Generate the right AST node
-    if (n->right)
-    {
-        rightreg = genAST(n->right);
-    }
-
-    // Handle the different AST node types
-    switch (n->type)
-    {
-    case A_POS:
-        return leftreg;
-    case A_NEG:
-        return cg_neg(leftreg);
+        return CG->storglob(rightreg, id);
+    // BINARY OPERATIONS
     case A_ADD:
-        return cg_add(leftreg, rightreg);
     case A_SUB:
-        return cg_sub(leftreg, rightreg);
     case A_MUL:
-        return cg_mul(leftreg, rightreg);
     case A_DIV:
-        return cg_div(leftreg, rightreg);
     case A_MOD:
-        return cg_mod(leftreg, rightreg);
     case A_POW:
-        return cg_pow(leftreg, rightreg);
     case A_EQ:
-        return cg_cmp(leftreg, rightreg, "eq");
     case A_NEQ:
-        return cg_cmp(leftreg, rightreg, "ne");
     case A_LT:
-        return cg_cmp(leftreg, rightreg, "lt");
-    case A_LE:
-        return cg_cmp(leftreg, rightreg, "le");
     case A_GT:
-        return cg_cmp(leftreg, rightreg, "gt");
+    case A_LE:
     case A_GE:
-        return cg_cmp(leftreg, rightreg, "ge");
     case A_AND:
-        return cg_and(leftreg, rightreg);
     case A_OR:
-        return cg_or(leftreg, rightreg);
+        leftreg = cgAST(n->left);
+        rightreg = cgAST(n->right);
+        switch (n->type)
+        {
+            // ARITHMETIC
+        case A_ADD:
+            return CG->add(leftreg, rightreg);
+        case A_SUB:
+            return CG->sub(leftreg, rightreg);
+        case A_MUL:
+            return CG->mul(leftreg, rightreg);
+        case A_DIV:
+            return CG->div(leftreg, rightreg);
+        case A_MOD:
+            return CG->mod(leftreg, rightreg);
+        case A_POW:
+            return CG->pow(leftreg, rightreg);
+        // LOGICAL
+        case A_EQ:
+            return CG->cmp(leftreg, rightreg, "eq");
+        case A_NEQ:
+            return CG->cmp(leftreg, rightreg, "ne");
+        case A_LT:
+            return CG->cmp(leftreg, rightreg, "lt");
+        case A_GT:
+            return CG->cmp(leftreg, rightreg, "gt");
+        case A_LE:
+            return CG->cmp(leftreg, rightreg, "le");
+        case A_GE:
+            return CG->cmp(leftreg, rightreg, "ge");
+        case A_AND:
+            return CG->and(leftreg, rightreg);
+        case A_OR:
+            return CG->or(leftreg, rightreg);
+        default:
+            return NO_REG;
+        }
+    // UNARY OPERATIONS
+    case A_POS:
+    case A_NEG:
     case A_NOT:
-        return cg_not(leftreg);
-    case A_IDENT:
-        return cg_loadglob(n->value.integer);
-    case A_INTLIT:
-        return cg_loadint(n->value.integer);
-    case A_TRUE:
-        return cg_loadint(1);
-    case A_FALSE:
-        return cg_loadint(0);
+        leftreg = cgAST(n->left);
+        switch (n->type)
+        {
+        case A_POS:
+            return leftreg;
+        case A_NEG:
+            return CG->neg(leftreg);
+        case A_NOT:
+            return CG->not(leftreg);
+        default:
+            return NO_REG;
+        }
+    // OTHERS
     case A_PRINT:
-        cg_printint(leftreg);
+        leftreg = cgAST(n->left);
+        CG->printint(leftreg);
         return NO_REG;
     default:
-        fprintf(stderr, "Compile Error: unknown AST node type\n");
+        fprintf(stderr, "Fatal Error: Unknown AST Node type %d\n", n->type);
         exit(1);
     }
 }
 
-// Wrapper function for generate the assembly code for a global symbol
+// Generate the assembly code for a global symbol
 void genglobsym(int id)
 {
-    return arm64_globsym(id);
+    CG->globsym(id);
 }
 
 // Generate the assembly code for the entire program
@@ -291,12 +175,12 @@ void gencode(ASTnode *n)
 {
     int reg;
 
-    cg_preamble();
-    reg = genAST(n);
+    CG->preamble();
+    reg = cgAST(n);
     if (reg != NO_REG)
     {
-        arm64_free_register(reg);
+        CG->free_register(reg);
     }
-    cg_postamble();
-    cg_data_seg();
+    CG->postamble();
+    CG->data_seg();
 }

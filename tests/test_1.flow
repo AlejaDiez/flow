@@ -5,16 +5,16 @@ x = 50;
 
 # 1. Prueba de comparación simple
 res = x > 10;
-print(res); # Esperado: 1 (True)
+print(res); # true
 
 # 2. Prueba de precedencia (Suma antes que comparación)
 res = x + 10 == 60; 
-print(res); # Esperado: 1 (True) -> (50+10) == 60
+print(res); # true
 
 # 3. Prueba de lógica (AND)
 res = (x > 10) && (x < 100);
-print(res); # Esperado: 1 (True)
+print(res); # true
 
 # 4. Prueba de lógica fallida
 res = x == 50 && x == 20;
-print(res); # Esperado: 0 (False)
+print(res); # false

@@ -28,10 +28,16 @@
 
 void init()
 {
+
     Putback = 0;
     Line = 1;
     Column = 1;
     Length = 0;
+
+    Globals = 0;
+
+    extern struct Backend ARM64_Backend;
+    CG = &ARM64_Backend;
 }
 
 int main(int argc, char *argv[])
