@@ -14,7 +14,7 @@ static ASTnodeType unaryop(TokenType tokentype)
         return A_POS;
     case T_MINUS:
         return A_NEG;
-    case T_NOT:
+    case T_BANG:
         return A_NOT;
     default:
         fprintf(stderr, "Syntax Error: unrecognized token (%d:%d)\n", Line, Column);
@@ -33,14 +33,12 @@ static ASTnodeType binaryop(TokenType tokentype)
         return A_SUB;
     case T_STAR:
         return A_MUL;
-    case T_SLASH:
-        return A_DIV;
-    case T_DSLASH:
-        return A_FDIV;
-    case T_PERCENT:
-        return A_MOD;
     case T_DSTAR:
         return A_POW;
+    case T_SLASH:
+        return A_DIV;
+    case T_PERCENT:
+        return A_MOD;
     case T_EQ:
         return A_EQ;
     case T_NEQ:
@@ -53,9 +51,9 @@ static ASTnodeType binaryop(TokenType tokentype)
         return A_LE;
     case T_GE:
         return A_GE;
-    case T_AND:
+    case T_DAMPERSAND:
         return A_AND;
-    case T_OR:
+    case T_DPIPE:
         return A_OR;
     default:
         fprintf(stderr, "Syntax Error: unrecognized token (%d:%d)\n", Line, Column);
@@ -72,7 +70,6 @@ static int op_precedence(TokenType tokentype)
         return 6;
     case T_STAR:
     case T_SLASH:
-    case T_DSLASH:
     case T_PERCENT:
         return 5;
     case T_PLUS:
@@ -85,9 +82,9 @@ static int op_precedence(TokenType tokentype)
     case T_LE:
     case T_GE:
         return 3;
-    case T_AND:
+    case T_DAMPERSAND:
         return 2;
-    case T_OR:
+    case T_DPIPE:
         return 1;
     default:
         fprintf(stderr, "Syntax Error: expected an operator but another token was found (%d:%d)\n", Line, Column);
@@ -106,7 +103,7 @@ static ASTnode *primary(void)
     {
     case T_PLUS:
     case T_MINUS:
-    case T_NOT:
+    case T_BANG:
         id = CurrentToken.type;
         scan(&CurrentToken);
         n = primary();

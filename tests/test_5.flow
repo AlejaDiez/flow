@@ -1,7 +1,17 @@
 var x: int;
-x = 10;
+var y: int;
+var flag: bool;
 
-print(x // 3);  # 10 / 3 = 3.3333 Debería imprimir 3
-print(x // 4);  # 10 / 4 = 2.5 Debería imprimir 2
-print(x // 5);  # 10 / 5 = 2 Debería imprimir 2
-print(x // 6);  # 10 / 6 = 1.6666 Debería imprimir 1
+x = 10;
+flag = true;
+
+print(-x);
+print(!flag);
+
+print(--x);
+print(!!flag);
+
+print(-5 + 20);
+print(-(5 + 20));
+
+print(!flag == false);

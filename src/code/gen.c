@@ -95,12 +95,6 @@ static int cg_div(int r1, int r2)
     return arm64_div(r1, r2);
 }
 
-// Wrapper for floor division operation between two registers
-static int cg_fdiv(int r1, int r2)
-{
-    return arm64_fdiv(r1, r2);
-}
-
 // Wrapper for modulo operation between two registers
 static int cg_mod(int r1, int r2)
 {
@@ -177,6 +171,46 @@ static int genAST(ASTnode *n)
         // R-Value
         rightreg = genAST(n->right);
         return cg_storglob(rightreg, n->left->value.integer);
+    case A_ASADD:
+    case A_ASSUB:
+    case A_ASMUL:
+    case A_ASDIV:
+    case A_ASMOD:
+    case A_ASPOW:
+    case A_ASAND:
+    case A_ASOR:
+        // R-Value
+        rightreg = genAST(n->right);
+        // L-Value
+        leftreg = cg_loadglob(n->left->value.integer);
+        switch (n->type)
+        {
+        case A_ASADD:
+            rightreg = cg_add(leftreg, rightreg);
+            break;
+        case A_ASSUB:
+            rightreg = cg_sub(leftreg, rightreg);
+            break;
+        case A_ASMUL:
+            rightreg = cg_mul(leftreg, rightreg);
+            break;
+        case A_ASDIV:
+            rightreg = cg_div(leftreg, rightreg);
+            break;
+        case A_ASMOD:
+            rightreg = cg_mod(leftreg, rightreg);
+            break;
+        case A_ASPOW:
+            rightreg = cg_pow(leftreg, rightreg);
+            break;
+        case A_ASAND:
+            rightreg = cg_and(leftreg, rightreg);
+            break;
+        case A_ASOR:
+            rightreg = cg_or(leftreg, rightreg);
+            break;
+        }
+        return cg_storglob(rightreg, n->left->value.integer);
     default:
         break;
     }
@@ -207,8 +241,6 @@ static int genAST(ASTnode *n)
         return cg_mul(leftreg, rightreg);
     case A_DIV:
         return cg_div(leftreg, rightreg);
-    case A_FDIV:
-        return cg_fdiv(leftreg, rightreg);
     case A_MOD:
         return cg_mod(leftreg, rightreg);
     case A_POW:

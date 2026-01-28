@@ -189,14 +189,6 @@ int arm64_div(int r1, int r2)
     return r2;
 }
 
-// Floor division operation between two registers
-int arm64_fdiv(int r1, int r2)
-{
-    fprintf(OutFile, "\tsdiv %s, %s, %s\n", reglist[r2], reglist[r1], reglist[r2]);
-    arm64_free_register(r1);
-    return r2;
-}
-
 // Modulo operation between two registers
 int arm64_mod(int r1, int r2)
 {

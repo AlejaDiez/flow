@@ -187,17 +187,49 @@ int scan(Token *t)
         t->value = NO_VALUE;
         return 0;
     case '+':
-        t->type = T_PLUS;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASPLUS;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_PLUS;
+            t->value = NO_VALUE;
+        }
         break;
     case '-':
-        t->type = T_MINUS;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASMINUS;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_MINUS;
+            t->value = NO_VALUE;
+        }
         break;
     case '*':
         if ((c = next()) == '*')
         {
-            t->type = T_DSTAR;
+            if ((c = next()) == '=')
+            {
+                t->type = T_ASDSTAR;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                putback(c);
+                t->type = T_DSTAR;
+                t->value = NO_VALUE;
+            }
+        }
+        else if (c == '=')
+        {
+            t->type = T_ASSTAR;
             t->value = NO_VALUE;
         }
         else
@@ -208,9 +240,9 @@ int scan(Token *t)
         }
         break;
     case '/':
-        if ((c = next()) == '/')
+        if ((c = next()) == '=')
         {
-            t->type = T_DSLASH;
+            t->type = T_ASSLASH;
             t->value = NO_VALUE;
         }
         else
@@ -221,8 +253,17 @@ int scan(Token *t)
         }
         break;
     case '%':
-        t->type = T_PERCENT;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASPERCENT;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_PERCENT;
+            t->value = NO_VALUE;
+        }
         break;
     case '=':
         if ((c = next()) == '=')
@@ -272,15 +313,24 @@ int scan(Token *t)
         else
         {
             putback(c);
-            t->type = T_NOT;
+            t->type = T_BANG;
             t->value = NO_VALUE;
         }
         break;
     case '&':
         if ((c = next()) == '&')
         {
-            t->type = T_AND;
-            t->value = NO_VALUE;
+            if ((c = next()) == '=')
+            {
+                t->type = T_ASDAMPERSAND;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                putback(c);
+                t->type = T_DAMPERSAND;
+                t->value = NO_VALUE;
+            }
         }
         else
         {
@@ -292,8 +342,17 @@ int scan(Token *t)
     case '|':
         if ((c = next()) == '|')
         {
-            t->type = T_OR;
-            t->value = NO_VALUE;
+            if ((c = next()) == '=')
+            {
+                t->type = T_ASDPIPE;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                putback(c);
+                t->type = T_DPIPE;
+                t->value = NO_VALUE;
+            }
         }
         else
         {

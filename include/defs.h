@@ -32,7 +32,6 @@ typedef enum TokenType
     T_STAR,
     T_DSTAR,
     T_SLASH,
-    T_DSLASH,
     T_PERCENT,
     // Comparison Operators
     T_EQ,
@@ -42,11 +41,19 @@ typedef enum TokenType
     T_GT,
     T_GE,
     // Logical Operators
-    T_AND,
-    T_OR,
-    T_NOT,
+    T_DAMPERSAND,
+    T_DPIPE,
+    T_BANG,
     // Assignment Operators
     T_ASSIGN,
+    T_ASPLUS,
+    T_ASMINUS,
+    T_ASSTAR,
+    T_ASSLASH,
+    T_ASPERCENT,
+    T_ASDSTAR,
+    T_ASDAMPERSAND,
+    T_ASDPIPE,
     // Literals
     T_IDENT,
     T_INTLIT,
@@ -84,7 +91,6 @@ typedef enum ASTnodeType
     A_SUB,
     A_MUL,
     A_DIV,
-    A_FDIV,
     A_MOD,
     A_POW,
     // Comparison Operations
@@ -100,6 +106,14 @@ typedef enum ASTnodeType
     A_NOT,
     // Assignment Operations
     A_ASSIGN,
+    A_ASADD,
+    A_ASSUB,
+    A_ASMUL,
+    A_ASDIV,
+    A_ASMOD,
+    A_ASPOW,
+    A_ASAND,
+    A_ASOR,
     // Literals
     A_IDENT,
     A_INTLIT,

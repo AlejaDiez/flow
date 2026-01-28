@@ -22,7 +22,6 @@ int arm64_add(int r1, int r2);
 int arm64_sub(int r1, int r2);
 int arm64_mul(int r1, int r2);
 int arm64_div(int r1, int r2);
-int arm64_fdiv(int r1, int r2);
 int arm64_mod(int r1, int r2);
 int arm64_pow(int r1, int r2);
 int arm64_cmp(int r1, int r2, char *op);

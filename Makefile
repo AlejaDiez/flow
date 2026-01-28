@@ -3,6 +3,7 @@ FLAGS = -Wall -Iinclude
 SRC = ${shell find src -name '*.c'}
 OBJ = ${SRC:src/%.c=build/%.o}
 TARGET = bin/flow
+ARGS = $(filter-out $@,$(MAKECMDGOALS))
 
 all: ${TARGET}
 
@@ -21,11 +22,12 @@ run: ${TARGET}
 	./${TARGET}
 
 test: clean all
-	@if [ -z "${TEST}" ]; then \
-		echo "Error: no arguments provided, run using 'make test TEST=test_name'"; \
+	@:
+	@if [ -z "$(ARGS)" ]; then \
+		echo "Error: no test name provided, run using 'make test test_name'"; \
 	else \
 		clear; \
-		./${TARGET} ./tests/${TEST}.flow; \
+		./${TARGET} ./tests/$(ARGS).flow; \
 		if [ $$? -eq 0 ]; then \
 			gcc ./out.s -o ./out; \
 			rm -f ./out.s; \
@@ -35,4 +37,7 @@ test: clean all
 			fi; \
 		fi; \
 	fi
+%:
+	@:
+
 .PHONY: all clean run test
