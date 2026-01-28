@@ -141,4 +141,34 @@ typedef struct SymTable
     PType type;
 } SymTable;
 
+// Code Generation
+struct Backend
+{
+    void (*freeall_registers)(void);
+    void (*free_register)(int);
+    int (*alloc_register)(void);
+    void (*preamble)(void);
+    void (*postamble)(void);
+    void (*data_seg)(void);
+    void (*globsym)(int);
+    int (*label)(void);
+    void (*genlabel)(int);
+    void (*jump)(int);
+    void (*jump_cond)(int, int);
+    int (*loadint)(int);
+    int (*loadglob)(int);
+    int (*storglob)(int, int);
+    int (*add)(int, int);
+    int (*sub)(int, int);
+    int (*neg)(int);
+    int (*mul)(int, int);
+    int (*div)(int, int);
+    int (*mod)(int, int);
+    int (*pow)(int, int);
+    int (*not)(int);
+    int (*cmp)(int, int, char *);
+    int (*and)(int, int);
+    int (*or)(int, int);
+    void (*printint)(int);
+};
 #endif

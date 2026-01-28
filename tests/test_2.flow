@@ -5,3 +5,7 @@ var c: int;
 a = true;
 b = false;
 c = 10;
+
+print(a); # true
+print(b); # false
+print(c); # 10

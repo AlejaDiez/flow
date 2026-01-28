@@ -5,13 +5,13 @@ var flag: bool;
 x = 10;
 flag = true;
 
-print(-x);
-print(!flag);
+print(-x); # -10
+print(!flag); # false
 
-print(--x);
-print(!!flag);
+print(--x); # 10
+print(!!flag); # true
 
-print(-5 + 20);
-print(-(5 + 20));
+print(-5 + 20); # 15
+print(-(5 + 20)); # -25
 
-print(!flag == false);
+print(!flag == false); # true
