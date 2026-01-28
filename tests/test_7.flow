@@ -1,0 +1,22 @@
+var x: int = 10;
+var y: bool = true;
+
+x += 2;
+print(x); # 12
+x -= 2;
+print(x); # 10
+x *= 2;
+print(x); # 20
+x /= 4;
+print(x); # 5
+x %= 2;
+print(x); # 1
+x = 10;
+print(x); # 10
+x **= 2;
+print(x); # 100
+
+y ||= false;
+print(y); # true
+y &&= false;
+print(y); # false

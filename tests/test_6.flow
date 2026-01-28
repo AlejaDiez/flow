@@ -1,0 +1,13 @@
+# Prueba de declaración con inicialización
+var x: int = 10;
+var y: int = x * 2 + 5; # ¡Expresiones complejas permitidas!
+var z: bool = true;
+
+print(x); # 10
+print(y); # 25
+print(z); # 1
+
+# Prueba de declaración clásica (sin inicializar)
+var w: int;
+w = 99;
+print(w);

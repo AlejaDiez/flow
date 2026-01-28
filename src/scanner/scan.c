@@ -129,16 +129,34 @@ static int keyword(char *s)
 {
     switch (*s)
     {
-    case 'p':
-        if (!strcmp(s, "print"))
+    case 'b':
+        if (!strcmp(s, "bool"))
         {
-            return T_PRINT;
+            return T_BOOL;
+        }
+        break;
+    case 'f':
+        if (!strcmp(s, "false"))
+        {
+            return T_FALSE;
         }
         break;
     case 'i':
         if (!strcmp(s, "int"))
         {
             return T_INT;
+        }
+        break;
+    case 'p':
+        if (!strcmp(s, "print"))
+        {
+            return T_PRINT;
+        }
+        break;
+    case 't':
+        if (!strcmp(s, "true"))
+        {
+            return T_TRUE;
         }
         break;
     case 'v':
@@ -169,24 +187,179 @@ int scan(Token *t)
         t->value = NO_VALUE;
         return 0;
     case '+':
-        t->type = T_PLUS;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASPLUS;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_PLUS;
+            t->value = NO_VALUE;
+        }
         break;
     case '-':
-        t->type = T_MINUS;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASMINUS;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_MINUS;
+            t->value = NO_VALUE;
+        }
         break;
     case '*':
-        t->type = T_STAR;
-        t->value = NO_VALUE;
+        if ((c = next()) == '*')
+        {
+            if ((c = next()) == '=')
+            {
+                t->type = T_ASDSTAR;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                putback(c);
+                t->type = T_DSTAR;
+                t->value = NO_VALUE;
+            }
+        }
+        else if (c == '=')
+        {
+            t->type = T_ASSTAR;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_STAR;
+            t->value = NO_VALUE;
+        }
         break;
     case '/':
-        t->type = T_SLASH;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASSLASH;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_SLASH;
+            t->value = NO_VALUE;
+        }
+        break;
+    case '%':
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASPERCENT;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_PERCENT;
+            t->value = NO_VALUE;
+        }
         break;
     case '=':
-        t->type = T_ASSIGN;
-        t->value = NO_VALUE;
+        if ((c = next()) == '=')
+        {
+            t->type = T_EQ;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_ASSIGN;
+            t->value = NO_VALUE;
+        }
+        break;
+    case '<':
+        if ((c = next()) == '=')
+        {
+            t->type = T_LE;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_LT;
+            t->value = NO_VALUE;
+        }
+        break;
+    case '>':
+        if ((c = next()) == '=')
+        {
+            t->type = T_GE;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_GT;
+            t->value = NO_VALUE;
+        }
+        break;
+    case '!':
+        if ((c = next()) == '=')
+        {
+            t->type = T_NEQ;
+            t->value = NO_VALUE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_BANG;
+            t->value = NO_VALUE;
+        }
+        break;
+    case '&':
+        if ((c = next()) == '&')
+        {
+            if ((c = next()) == '=')
+            {
+                t->type = T_ASDAMPERSAND;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                putback(c);
+                t->type = T_DAMPERSAND;
+                t->value = NO_VALUE;
+            }
+        }
+        else
+        {
+            putback(c);
+            fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
+            exit(1);
+        }
+        break;
+    case '|':
+        if ((c = next()) == '|')
+        {
+            if ((c = next()) == '=')
+            {
+                t->type = T_ASDPIPE;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                putback(c);
+                t->type = T_DPIPE;
+                t->value = NO_VALUE;
+            }
+        }
+        else
+        {
+            putback(c);
+            fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
+            exit(1);
+        }
         break;
     case ':':
         t->type = T_COLON;

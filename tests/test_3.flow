@@ -1,0 +1,6 @@
+var x: int;
+x = 10;
+
+print(x % 3);  # 10 / 3 = 3, sobra 1. Debería imprimir 1.
+print(x % 2);  # 10 / 2 = 5, sobra 0. Debería imprimir 0.
+print(14 % 5); # 14 / 5 = 2, sobra 4. Debería imprimir 4.

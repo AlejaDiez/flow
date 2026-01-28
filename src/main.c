@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        fprintf(stderr, "Error: not input file\n");
+        fprintf(stderr, "Error: not input file");
         exit(1);
     }
 
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     // Create a new output file
     if ((OutFile = fopen("out.s", "w")) == NULL)
     {
-        fprintf(stderr, "Error: cannot create output file\n");
+        fprintf(stderr, "Error: cannot create output file");
         exit(1);
     }
 

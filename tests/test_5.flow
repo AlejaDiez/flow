@@ -1,0 +1,17 @@
+var x: int;
+var y: int;
+var flag: bool;
+
+x = 10;
+flag = true;
+
+print(-x);
+print(!flag);
+
+print(--x);
+print(!!flag);
+
+print(-5 + 20);
+print(-(5 + 20));
+
+print(!flag == false);

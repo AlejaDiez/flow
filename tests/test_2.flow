@@ -1,0 +1,7 @@
+var a: bool;
+var b: bool;
+var c: int;
+
+a = true;
+b = false;
+c = 10;

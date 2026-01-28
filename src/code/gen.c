@@ -35,6 +35,18 @@ static void cg_postamble(void)
     return arm64_postamble();
 }
 
+// Wrapper function for generate a label
+static void cg_label(int l)
+{
+    return arm64_label(l);
+}
+
+// Wrapper function for generate a jump to a label
+static void cg_jump(int l)
+{
+    return arm64_jump(l);
+}
+
 // Wrapper function for store a register value in a global variable and return the register number
 static int cg_storglob(int r, int id)
 {
@@ -53,28 +65,70 @@ static int cg_loadint(int value)
     return arm64_loadint(value);
 }
 
-// Wrapper function for add two registers
+// Wrapper function for negation operation for one register
+static int cg_neg(int r)
+{
+    return arm64_neg(r);
+}
+
+// Wrapper for addition operation between two registers
 static int cg_add(int r1, int r2)
 {
     return arm64_add(r1, r2);
 }
 
-// Wrapper function for subtract two registers
+// Wrapper for subtraction operation between two registers
 static int cg_sub(int r1, int r2)
 {
     return arm64_sub(r1, r2);
 }
 
-// Wrapper function for multiply two registers
+// Wrapper for multiplication operation between two registers
 static int cg_mul(int r1, int r2)
 {
     return arm64_mul(r1, r2);
 }
 
-// Wrapper function for divide two registers
+// Wrapper for division operation between two registers
 static int cg_div(int r1, int r2)
 {
     return arm64_div(r1, r2);
+}
+
+// Wrapper for modulo operation between two registers
+static int cg_mod(int r1, int r2)
+{
+    return arm64_mod(r1, r2);
+}
+
+// Wrapper for power operation between two registers
+static int cg_pow(int r1, int r2)
+{
+    return arm64_pow(r1, r2);
+}
+
+// Wrapper for comparison operation between two registers
+static int cg_cmp(int r1, int r2, char *op)
+{
+    return arm64_cmp(r1, r2, op);
+}
+
+// Wrapper for AND bitwise operation between two registers
+static int cg_and(int r1, int r2)
+{
+    return arm64_and(r1, r2);
+}
+
+// Wrapper for OR bitwise operation between two registers
+static int cg_or(int r1, int r2)
+{
+    return arm64_or(r1, r2);
+}
+
+// Wrapper function for negation operation for one register
+static int cg_not(int r)
+{
+    return arm64_not(r);
 }
 
 // Wrapper function for print a register value using C library's printf
@@ -117,6 +171,46 @@ static int genAST(ASTnode *n)
         // R-Value
         rightreg = genAST(n->right);
         return cg_storglob(rightreg, n->left->value.integer);
+    case A_ASADD:
+    case A_ASSUB:
+    case A_ASMUL:
+    case A_ASDIV:
+    case A_ASMOD:
+    case A_ASPOW:
+    case A_ASAND:
+    case A_ASOR:
+        // R-Value
+        rightreg = genAST(n->right);
+        // L-Value
+        leftreg = cg_loadglob(n->left->value.integer);
+        switch (n->type)
+        {
+        case A_ASADD:
+            rightreg = cg_add(leftreg, rightreg);
+            break;
+        case A_ASSUB:
+            rightreg = cg_sub(leftreg, rightreg);
+            break;
+        case A_ASMUL:
+            rightreg = cg_mul(leftreg, rightreg);
+            break;
+        case A_ASDIV:
+            rightreg = cg_div(leftreg, rightreg);
+            break;
+        case A_ASMOD:
+            rightreg = cg_mod(leftreg, rightreg);
+            break;
+        case A_ASPOW:
+            rightreg = cg_pow(leftreg, rightreg);
+            break;
+        case A_ASAND:
+            rightreg = cg_and(leftreg, rightreg);
+            break;
+        case A_ASOR:
+            rightreg = cg_or(leftreg, rightreg);
+            break;
+        }
+        return cg_storglob(rightreg, n->left->value.integer);
     default:
         break;
     }
@@ -135,6 +229,10 @@ static int genAST(ASTnode *n)
     // Handle the different AST node types
     switch (n->type)
     {
+    case A_POS:
+        return leftreg;
+    case A_NEG:
+        return cg_neg(leftreg);
     case A_ADD:
         return cg_add(leftreg, rightreg);
     case A_SUB:
@@ -143,10 +241,36 @@ static int genAST(ASTnode *n)
         return cg_mul(leftreg, rightreg);
     case A_DIV:
         return cg_div(leftreg, rightreg);
+    case A_MOD:
+        return cg_mod(leftreg, rightreg);
+    case A_POW:
+        return cg_pow(leftreg, rightreg);
+    case A_EQ:
+        return cg_cmp(leftreg, rightreg, "eq");
+    case A_NEQ:
+        return cg_cmp(leftreg, rightreg, "ne");
+    case A_LT:
+        return cg_cmp(leftreg, rightreg, "lt");
+    case A_LE:
+        return cg_cmp(leftreg, rightreg, "le");
+    case A_GT:
+        return cg_cmp(leftreg, rightreg, "gt");
+    case A_GE:
+        return cg_cmp(leftreg, rightreg, "ge");
+    case A_AND:
+        return cg_and(leftreg, rightreg);
+    case A_OR:
+        return cg_or(leftreg, rightreg);
+    case A_NOT:
+        return cg_not(leftreg);
     case A_IDENT:
         return cg_loadglob(n->value.integer);
     case A_INTLIT:
         return cg_loadint(n->value.integer);
+    case A_TRUE:
+        return cg_loadint(1);
+    case A_FALSE:
+        return cg_loadint(0);
     case A_PRINT:
         cg_printint(leftreg);
         return NO_REG;
