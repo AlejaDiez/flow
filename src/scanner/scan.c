@@ -135,6 +135,12 @@ static int keyword(char *s)
             return T_BOOL;
         }
         break;
+    case 'e':
+        if (!strcmp(s, "else"))
+        {
+            return T_ELSE;
+        }
+        break;
     case 'f':
         if (!strcmp(s, "false"))
         {
@@ -142,7 +148,11 @@ static int keyword(char *s)
         }
         break;
     case 'i':
-        if (!strcmp(s, "int"))
+        if (!strcmp(s, "if"))
+        {
+            return T_IF;
+        }
+        else if (!strcmp(s, "int"))
         {
             return T_INT;
         }

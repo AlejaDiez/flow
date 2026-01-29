@@ -6,7 +6,7 @@
 #include "decl.h"
 
 // Make a new AST node
-static ASTnode *mkastnode(ASTnodeType type, PType ptype, ASTnode *left, ASTnode *right, Value value)
+static ASTnode *mkastnode(ASTnodeType type, PType ptype, ASTnode *left, ASTnode *mid, ASTnode *right, Value value)
 {
     ASTnode *n;
 
@@ -14,13 +14,14 @@ static ASTnode *mkastnode(ASTnodeType type, PType ptype, ASTnode *left, ASTnode 
     n = (ASTnode *)malloc(sizeof(ASTnode));
     if (n == NULL)
     {
-        fprintf(stderr, "Error: out of memory");
+        fprintf(stderr, "Error: out of memory (%d:%d)", Line, Column);
         exit(1);
     }
     // Copy all the field values and return it
     n->type = type;
     n->ptype = ptype;
     n->left = left;
+    n->mid = mid;
     n->right = right;
     n->value = value;
     return n;
@@ -29,7 +30,7 @@ static ASTnode *mkastnode(ASTnodeType type, PType ptype, ASTnode *left, ASTnode 
 // Make a new AST leaf node
 ASTnode *mkastleaf(ASTnodeType type, PType ptype, Value value)
 {
-    return mkastnode(type, ptype, NULL, NULL, value);
+    return mkastnode(type, ptype, NULL, NULL, NULL, value);
 }
 
 // Make a new AST unary node
@@ -42,20 +43,20 @@ ASTnode *mkastunary(ASTnodeType type, ASTnode *child, Value value)
         // Check type
         if (child->ptype != P_INT)
         {
-            fprintf(stderr, "Type Error: operand of unary operation is not a number");
+            fprintf(stderr, "Type Error: operand of unary operation is not a number (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, P_INT, child, NULL, value);
+        return mkastnode(type, P_INT, child, NULL, NULL, value);
     case A_NOT:
         // Check type
         if (child->ptype != P_BOOL)
         {
-            fprintf(stderr, "Type Error: operand of not operation is not a boolean");
+            fprintf(stderr, "Type Error: operand of not operation is not a boolean (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, P_BOOL, child, NULL, value);
+        return mkastnode(type, P_BOOL, child, NULL, NULL, value);
     default:
-        return mkastnode(type, NO_PRIM, child, NULL, value);
+        return mkastnode(type, NO_PRIM, child, NULL, NULL, value);
     }
 }
 
@@ -73,25 +74,25 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
         // Check int left type
         if (left->ptype != P_INT)
         {
-            fprintf(stderr, "Type Error: left operand of math operation is not a number");
+            fprintf(stderr, "Type Error: left operand of math operation is not a number (%d:%d)", Line, Column);
             exit(1);
         }
         // Check int right type
         if (right->ptype != P_INT)
         {
-            fprintf(stderr, "Type Error: right operand of math operation is not a number");
+            fprintf(stderr, "Type Error: right operand of math operation is not a number (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, P_INT, left, right, value);
+        return mkastnode(type, P_INT, left, NULL, right, value);
     case A_EQ:
     case A_NEQ:
         // Check left and right types
         if (left->ptype != right->ptype)
         {
-            fprintf(stderr, "Type Error: cannot compare different types");
+            fprintf(stderr, "Type Error: cannot compare different types (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, P_BOOL, left, right, value);
+        return mkastnode(type, P_BOOL, left, NULL, right, value);
     case A_LT:
     case A_GT:
     case A_LE:
@@ -99,33 +100,33 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
         // Check left and right types
         if (left->ptype != right->ptype)
         {
-            fprintf(stderr, "Type Error: cannot compare different types");
+            fprintf(stderr, "Type Error: cannot compare different types (%d:%d)", Line, Column);
             exit(1);
         }
         // Check int type
         if (left->ptype != P_INT)
         {
-            fprintf(stderr, "Type Error: operators <, >, <=, >= require integer operands");
+            fprintf(stderr, "Type Error: operators <, >, <=, >= require integer operands (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, P_BOOL, left, right, value);
+        return mkastnode(type, P_BOOL, left, NULL, right, value);
     case A_AND:
     case A_OR:
         // Check bool types
         if (left->ptype != P_BOOL || right->ptype != P_BOOL)
         {
-            fprintf(stderr, "Type Error: operators && and || require boolean operands");
+            fprintf(stderr, "Type Error: operators && and || require boolean operands (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, P_BOOL, left, right, value);
+        return mkastnode(type, P_BOOL, left, NULL, right, value);
     case A_ASSIGN:
         // Verify that the variable type is the same as the value
         if (left->ptype != right->ptype)
         {
-            fprintf(stderr, "Type Error: incompatible assignment");
+            fprintf(stderr, "Type Error: incompatible assignment (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, NO_PRIM, left, right, value);
+        return mkastnode(type, NO_PRIM, left, NULL, right, value);
     case A_ASADD:
     case A_ASSUB:
     case A_ASMUL:
@@ -135,32 +136,38 @@ ASTnode *mkastbinary(ASTnodeType type, ASTnode *left, ASTnode *right, Value valu
         // Verify that the variable type is the same as the value
         if (left->ptype != right->ptype)
         {
-            fprintf(stderr, "Type Error: incompatible assignment");
+            fprintf(stderr, "Type Error: incompatible assignment (%d:%d)", Line, Column);
             exit(1);
         }
         // Check int type
         if (left->ptype != P_INT)
         {
-            fprintf(stderr, "Type Error: arithmetic assignment operators require integer operands");
+            fprintf(stderr, "Type Error: arithmetic assignment operators require integer operands (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, NO_PRIM, left, right, value);
+        return mkastnode(type, NO_PRIM, left, NULL, right, value);
     case A_ASAND:
     case A_ASOR:
         // Verify that the variable type is the same as the value
         if (left->ptype != right->ptype)
         {
-            fprintf(stderr, "Type Error: incompatible assignment");
+            fprintf(stderr, "Type Error: incompatible assignment (%d:%d)", Line, Column);
             exit(1);
         }
         // Check bool type
         if (left->ptype != P_BOOL)
         {
-            fprintf(stderr, "Type Error: logical assignment operators require boolean operands");
+            fprintf(stderr, "Type Error: logical assignment operators require boolean operands (%d:%d)", Line, Column);
             exit(1);
         }
-        return mkastnode(type, NO_PRIM, left, right, value);
+        return mkastnode(type, NO_PRIM, left, NULL, right, value);
     default:
-        return mkastnode(type, NO_PRIM, left, right, value);
+        return mkastnode(type, NO_PRIM, left, NULL, right, value);
     }
+}
+
+// Make a new AST ternary node
+ASTnode *mkastternary(ASTnodeType type, ASTnode *left, ASTnode *mid, ASTnode *right, Value value)
+{
+    return mkastnode(type, NO_PRIM, left, mid, right, value);
 }

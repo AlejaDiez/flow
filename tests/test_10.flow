@@ -1,0 +1,5 @@
+var x: int = 10;
+
+if (x == 20) print(20);
+else if (x >= 10) print(true);
+else print(false);

@@ -18,23 +18,74 @@ static int cgAST(ASTnode *n)
 
     switch (n->type)
     {
-    // SEQUENCES
-    case A_SEQ:
+    // BINARY OPERATIONS
+    case A_ADD:
+    case A_SUB:
+    case A_MUL:
+    case A_DIV:
+    case A_MOD:
+    case A_POW:
+    case A_EQ:
+    case A_NEQ:
+    case A_LT:
+    case A_GT:
+    case A_LE:
+    case A_GE:
+    case A_AND:
+    case A_OR:
         leftreg = cgAST(n->left);
-        if (leftreg != NO_REG)
+        rightreg = cgAST(n->right);
+        switch (n->type)
         {
-            CG->free_register(leftreg);
+        // ARITHMETIC
+        case A_ADD:
+            return CG->add(leftreg, rightreg);
+        case A_SUB:
+            return CG->sub(leftreg, rightreg);
+        case A_MUL:
+            return CG->mul(leftreg, rightreg);
+        case A_DIV:
+            return CG->div(leftreg, rightreg);
+        case A_MOD:
+            return CG->mod(leftreg, rightreg);
+        case A_POW:
+            return CG->pow(leftreg, rightreg);
+        // LOGICAL
+        case A_EQ:
+            return CG->cmp(leftreg, rightreg, "eq");
+        case A_NEQ:
+            return CG->cmp(leftreg, rightreg, "ne");
+        case A_LT:
+            return CG->cmp(leftreg, rightreg, "lt");
+        case A_GT:
+            return CG->cmp(leftreg, rightreg, "gt");
+        case A_LE:
+            return CG->cmp(leftreg, rightreg, "le");
+        case A_GE:
+            return CG->cmp(leftreg, rightreg, "ge");
+        case A_AND:
+            return CG->and(leftreg, rightreg);
+        case A_OR:
+            return CG->or(leftreg, rightreg);
+        default:
+            return NO_REG;
         }
-        return cgAST(n->right);
-    // LITERALS
-    case A_INTLIT:
-        return CG->loadint(n->value.integer);
-    case A_IDENT:
-        return CG->loadglob(n->value.integer);
-    case A_TRUE:
-        return CG->loadint(1);
-    case A_FALSE:
-        return CG->loadint(0);
+    // UNARY OPERATIONS
+    case A_POS:
+    case A_NEG:
+    case A_NOT:
+        leftreg = cgAST(n->left);
+        switch (n->type)
+        {
+        case A_POS:
+            return leftreg;
+        case A_NEG:
+            return CG->neg(leftreg);
+        case A_NOT:
+            return CG->not(leftreg);
+        default:
+            return NO_REG;
+        }
     // ASSIGNMENTS
     case A_ASSIGN:
     case A_ASADD:
@@ -85,79 +136,70 @@ static int cgAST(ASTnode *n)
             break;
         }
         return CG->storglob(rightreg, id);
-    // BINARY OPERATIONS
-    case A_ADD:
-    case A_SUB:
-    case A_MUL:
-    case A_DIV:
-    case A_MOD:
-    case A_POW:
-    case A_EQ:
-    case A_NEQ:
-    case A_LT:
-    case A_GT:
-    case A_LE:
-    case A_GE:
-    case A_AND:
-    case A_OR:
-        leftreg = cgAST(n->left);
-        rightreg = cgAST(n->right);
-        switch (n->type)
+    // LITERALS
+    case A_INTLIT:
+        return CG->loadint(n->value.integer);
+    case A_IDENT:
+        return CG->loadglob(n->value.integer);
+    case A_TRUE:
+        return CG->loadint(1);
+    case A_FALSE:
+        return CG->loadint(0);
+    // STATEMENTS
+    case A_IFELSE:
+    {
+        int Lfalse, Lend;
+
+        // Get labels
+        Lfalse = CG->label();
+        if (n->right)
         {
-            // ARITHMETIC
-        case A_ADD:
-            return CG->add(leftreg, rightreg);
-        case A_SUB:
-            return CG->sub(leftreg, rightreg);
-        case A_MUL:
-            return CG->mul(leftreg, rightreg);
-        case A_DIV:
-            return CG->div(leftreg, rightreg);
-        case A_MOD:
-            return CG->mod(leftreg, rightreg);
-        case A_POW:
-            return CG->pow(leftreg, rightreg);
-        // LOGICAL
-        case A_EQ:
-            return CG->cmp(leftreg, rightreg, "eq");
-        case A_NEQ:
-            return CG->cmp(leftreg, rightreg, "ne");
-        case A_LT:
-            return CG->cmp(leftreg, rightreg, "lt");
-        case A_GT:
-            return CG->cmp(leftreg, rightreg, "gt");
-        case A_LE:
-            return CG->cmp(leftreg, rightreg, "le");
-        case A_GE:
-            return CG->cmp(leftreg, rightreg, "ge");
-        case A_AND:
-            return CG->and(leftreg, rightreg);
-        case A_OR:
-            return CG->or(leftreg, rightreg);
-        default:
-            return NO_REG;
+            Lend = CG->label();
         }
-    // UNARY OPERATIONS
-    case A_POS:
-    case A_NEG:
-    case A_NOT:
+
+        // Check condition
         leftreg = cgAST(n->left);
-        switch (n->type)
+        CG->jump_cond(leftreg, Lfalse); // If false, jump to false
+        CG->free_register(leftreg);
+
+        // True statement
+        leftreg = cgAST(n->mid);
+        if (leftreg != NO_REG)
         {
-        case A_POS:
-            return leftreg;
-        case A_NEG:
-            return CG->neg(leftreg);
-        case A_NOT:
-            return CG->not(leftreg);
-        default:
-            return NO_REG;
+            CG->free_register(leftreg);
         }
-    // OTHERS
+
+        // False statement
+        if (n->right)
+        {
+            CG->jump(Lend);       // Jump to the end to skip the else statement
+            CG->genlabel(Lfalse); // False label
+
+            rightreg = cgAST(n->right);
+            if (rightreg != NO_REG)
+            {
+                CG->free_register(rightreg);
+            }
+            CG->genlabel(Lend); // End label
+        }
+        else
+        {
+            CG->genlabel(Lfalse); // False label
+        }
+        return NO_REG;
+    }
     case A_PRINT:
         leftreg = cgAST(n->left);
         CG->printint(leftreg);
         return NO_REG;
+    // GROUPING
+    case A_SEQ:
+        leftreg = cgAST(n->left);
+        if (leftreg != NO_REG)
+        {
+            CG->free_register(leftreg);
+        }
+        return cgAST(n->right);
     default:
         fprintf(stderr, "Fatal Error: Unknown AST Node type %d\n", n->type);
         exit(1);
