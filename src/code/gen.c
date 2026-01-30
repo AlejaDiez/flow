@@ -8,7 +8,7 @@
 // Generic AST walker to generate assembly code, returns the register number containing the result of the sub-tree
 static int cgAST(ASTnode *n)
 {
-    int id, leftreg, rightreg;
+    int id, leftreg, midreg, rightreg;
 
     // Empty tree
     if (n == NULL)
@@ -163,10 +163,10 @@ static int cgAST(ASTnode *n)
         CG->free_register(leftreg);
 
         // True statement
-        leftreg = cgAST(n->mid);
-        if (leftreg != NO_REG)
+        midreg = cgAST(n->mid);
+        if (midreg != NO_REG)
         {
-            CG->free_register(leftreg);
+            CG->free_register(midreg);
         }
 
         // False statement
@@ -186,6 +186,36 @@ static int cgAST(ASTnode *n)
         {
             CG->genlabel(Lfalse); // False label
         }
+        return NO_REG;
+    }
+    case A_LOOP:
+    {
+        int Lstart, Lend;
+
+        // Get labels
+        Lstart = CG->label();
+        Lend = CG->label();
+
+        // Mark start
+        CG->genlabel(Lstart);
+
+        // Check condition
+        leftreg = cgAST(n->left);
+        CG->jump_cond(leftreg, Lend);
+        CG->free_register(leftreg);
+
+        // Statement
+        rightreg = cgAST(n->right);
+        if (rightreg != NO_REG)
+        {
+            CG->free_register(rightreg);
+        }
+
+        // Start loop
+        CG->jump(Lstart);
+
+        // Mark end
+        CG->genlabel(Lend);
         return NO_REG;
     }
     case A_PRINT:

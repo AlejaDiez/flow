@@ -16,6 +16,7 @@ ASTnode *mkastternary(ASTnodeType type, ASTnode *left, ASTnode *mid, ASTnode *ri
 // Scanner
 int scan(Token *t);
 void match(TokenType t, char *what);
+int peek(void);
 
 // Sym Table
 int findglob(char *s);

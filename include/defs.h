@@ -66,6 +66,7 @@ typedef enum TokenType
     T_VAR,
     T_IF,
     T_ELSE,
+    T_LOOP,
     T_PRINT,
     // Punctuation
     T_COLON,
@@ -123,6 +124,7 @@ typedef enum ASTnodeType
     A_FALSE,
     // Statements
     A_IFELSE,
+    A_LOOP,
     A_PRINT,
     // Grouping
     A_SEQ

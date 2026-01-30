@@ -157,6 +157,12 @@ static int keyword(char *s)
             return T_INT;
         }
         break;
+    case 'l':
+        if (!strcmp(s, "loop"))
+        {
+            return T_LOOP;
+        }
+        break;
     case 'p':
         if (!strcmp(s, "print"))
         {
@@ -437,4 +443,33 @@ void match(TokenType t, char *what)
         fprintf(stderr, "Syntax Error: expected %s but found other token (%d:%d)\n", what, Line, Column);
         exit(1);
     }
+}
+
+// Look ahead in the input to see the next tokens without consuming them
+int peek(void)
+{
+    Token tmpToken;
+
+    // Save current state
+    struct
+    {
+        int putback;
+        int line;
+        int column;
+        int length;
+    } state = {Putback, Line, Column, Length};
+    long pos = ftell(InputFile);
+
+    // Scan the next token
+    scan(&tmpToken);
+
+    // Restore state
+    fseek(InputFile, pos, SEEK_SET);
+    Putback = state.putback;
+    Line = state.line;
+    Column = state.column;
+    Length = state.length;
+
+    // Return the token
+    return tmpToken.type;
 }
