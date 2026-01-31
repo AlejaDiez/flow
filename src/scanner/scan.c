@@ -163,10 +163,22 @@ static int keyword(char *s)
             return T_LOOP;
         }
         break;
+    case 'n':
+        if (!strcmp(s, "next"))
+        {
+            return T_NEXT;
+        }
+        break;
     case 'p':
         if (!strcmp(s, "print"))
         {
             return T_PRINT;
+        }
+        break;
+    case 's':
+        if (!strcmp(s, "stop"))
+        {
+            return T_STOP;
         }
         break;
     case 't':

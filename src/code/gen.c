@@ -5,6 +5,42 @@
 #include "data.h"
 #include "decl.h"
 
+#define MAX_NESTED_CONTROLS 64
+
+// Control context
+static struct
+{
+    ASTnodeType type;
+    int label_continue;
+    int label_end;
+} control_stack[MAX_NESTED_CONTROLS];
+static int control_top = -1;
+
+// Control stack management, add a new control
+static void push_control(int type, int cont, int end)
+{
+    if (control_top >= MAX_NESTED_CONTROLS - 1)
+    {
+        fprintf(stderr, "Compiler Error: controls nested too deeply\n");
+        exit(1);
+    }
+    control_top++;
+    control_stack[control_top].type = type;
+    control_stack[control_top].label_continue = cont;
+    control_stack[control_top].label_end = end;
+}
+
+// Control stack management, remove a control
+static void pop_control(void)
+{
+    if (control_top < 0)
+    {
+        fprintf(stderr, "Compiler Error: control stack underflow\n");
+        exit(1);
+    }
+    control_top--;
+}
+
 // Generic AST walker to generate assembly code, returns the register number containing the result of the sub-tree
 static int cgAST(ASTnode *n)
 {
@@ -190,13 +226,17 @@ static int cgAST(ASTnode *n)
     }
     case A_LOOP:
     {
-        int Lstart, Lend;
+        int Lstart, Lcontinue, Lend;
 
         // Get labels
         Lstart = CG->label();
+        Lcontinue = CG->label();
         Lend = CG->label();
 
-        // Mark start
+        // Add loop to the stack
+        push_control(A_LOOP, Lcontinue, Lend);
+
+        // Start label
         CG->genlabel(Lstart);
 
         // Check condition
@@ -205,19 +245,51 @@ static int cgAST(ASTnode *n)
         CG->free_register(leftreg);
 
         // Statement
-        rightreg = cgAST(n->right);
-        if (rightreg != NO_REG)
+        midreg = cgAST(n->mid);
+        if (midreg != NO_REG)
         {
-            CG->free_register(rightreg);
+            CG->free_register(midreg);
         }
 
-        // Start loop
+        // Continue label
+        CG->genlabel(Lcontinue);
+
+        // Check update
+        if (n->right)
+        {
+            rightreg = cgAST(n->right);
+            if (rightreg != NO_REG)
+            {
+                CG->free_register(rightreg);
+            }
+        }
+
+        // Jump to start
         CG->jump(Lstart);
 
-        // Mark end
+        // End label
         CG->genlabel(Lend);
+
+        // Remove loop from the stack
+        pop_control();
         return NO_REG;
     }
+    case A_STOP:
+        if (control_stack < 0)
+        {
+            fprintf(stderr, "Error: stop used outside of a control structure\n");
+            exit(1);
+        }
+        CG->jump(control_stack[control_top].label_end);
+        return NO_REG;
+    case A_NEXT:
+        if (control_stack < 0)
+        {
+            fprintf(stderr, "Error: next used outside of a control structure\n");
+            exit(1);
+        }
+        CG->jump(control_stack[control_top].label_continue);
+        return NO_REG;
     case A_PRINT:
         leftreg = cgAST(n->left);
         CG->printint(leftreg);

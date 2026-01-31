@@ -222,7 +222,7 @@ static ASTnode *loop_statement(void)
         right = statement();
 
         // Create the AST
-        n = mkastbinary(A_LOOP, left, right, NO_VALUE);
+        n = mkastternary(A_LOOP, left, right, NULL, NO_VALUE);
         return n;
     }
 
@@ -236,10 +236,7 @@ static ASTnode *loop_statement(void)
     else if (CurrentToken.type == T_VAR) // For loop with var declaration
     {
         // Parse var declaration
-        init = var_declaration();
-
-        // Match the syntax
-        match(T_SEMICOLON, ";");
+        init = semicolon(var_declaration);
     }
     else if (CurrentToken.type == T_IDENT)
     {
@@ -248,10 +245,7 @@ static ASTnode *loop_statement(void)
         if (next == T_ASSIGN || next == T_ASPLUS || next == T_ASMINUS || next == T_ASSTAR || next == T_ASSLASH || next == T_ASPERCENT || next == T_ASDSTAR || next == T_ASDAMPERSAND || next == T_ASDPIPE) // For loop with initiation
         {
             // Parse var assignment
-            init = assignment_statement();
-
-            // Match the syntax
-            match(T_SEMICOLON, ";");
+            init = semicolon(assignment_statement);
         }
         else // While loop
         {
@@ -262,7 +256,7 @@ static ASTnode *loop_statement(void)
             // Parse statement
             right = statement();
             // Create the AST
-            n = mkastbinary(A_LOOP, left, right, NO_VALUE);
+            n = mkastternary(A_LOOP, left, right, NULL, NO_VALUE);
             return n;
         }
     }
@@ -275,14 +269,14 @@ static ASTnode *loop_statement(void)
         // Parse statement
         right = statement();
         // Create the AST
-        n = mkastbinary(A_LOOP, left, right, NO_VALUE);
+        n = mkastternary(A_LOOP, left, right, NULL, NO_VALUE);
         return n;
     }
 
     // Parse condition
     if (CurrentToken.type != T_SEMICOLON)
     {
-        left = expression();
+        left = semicolon(expression);
         if (left->ptype != P_BOOL)
         {
             fprintf(stderr, "Type Error: loop condition must be boolean\n");
@@ -292,10 +286,8 @@ static ASTnode *loop_statement(void)
     else
     {
         left = mkastleaf(A_TRUE, P_BOOL, (Value){1});
+        match(T_SEMICOLON, ";");
     }
-
-    // Match the syntax
-    match(T_SEMICOLON, ";");
 
     // Parse update
     if (CurrentToken.type != T_RPAREN)
@@ -308,16 +300,28 @@ static ASTnode *loop_statement(void)
     right = statement();
 
     // Create the AST
-    if (upd != NULL)
-    {
-        n = mkastbinary(A_SEQ, right, upd, NO_VALUE);
-    }
-    n = mkastbinary(A_LOOP, left, n, NO_VALUE);
+    n = mkastternary(A_LOOP, left, right, upd, NO_VALUE);
     if (init != NULL)
     {
         n = mkastbinary(A_SEQ, init, n, NO_VALUE);
     }
     return n;
+}
+
+// Parse a stop statement
+static ASTnode *stop_statement(void)
+{
+    // Match the syntax
+    match(T_STOP, "stop");
+    return mkastleaf(A_STOP, NO_PRIM, NO_VALUE);
+}
+
+// Parse a jump statement
+static ASTnode *jump_statement(void)
+{
+    // Match the syntax
+    match(T_NEXT, "next");
+    return mkastleaf(A_NEXT, NO_PRIM, NO_VALUE);
 }
 
 // TODO: replace with std library
@@ -350,6 +354,10 @@ static ASTnode *statement(void)
         return ifelse_statement();
     case T_LOOP:
         return loop_statement();
+    case T_STOP:
+        return semicolon(stop_statement);
+    case T_NEXT:
+        return semicolon(jump_statement);
     case T_PRINT:
         return semicolon(print_statement);
     case T_LBRACE:
