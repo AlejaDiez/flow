@@ -6,19 +6,16 @@
 #include "data.h"
 #include "decl.h"
 
-// Type to primary type
-static PType ptype(TokenType tokentype)
+static ASTnode *statement(void);
+
+// Required semicolon
+static ASTnode *semicolon(ASTnode *(*func)(void))
 {
-    switch (tokentype)
-    {
-    case T_INT:
-        return P_INT;
-    case T_BOOL:
-        return P_BOOL;
-    default:
-        fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
-        exit(1);
-    }
+    ASTnode *n = func();
+
+    // Match the syntax
+    match(T_SEMICOLON, ";");
+    return n;
 }
 
 // Parse a variable declaration
@@ -43,7 +40,18 @@ static ASTnode *var_declaration(void)
     match(T_COLON, ":");
 
     // Parse type
-    type = ptype(CurrentToken.type);
+    switch (CurrentToken.type)
+    {
+    case T_INT:
+        type = P_INT;
+        break;
+    case T_BOOL:
+        type = P_BOOL;
+        break;
+    default:
+        fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
+        exit(1);
+    }
     scan(&CurrentToken);
 
     // Add the variable to the global symbol table
@@ -127,12 +135,282 @@ static ASTnode *assignment_statement(void)
 
     // Create the AST
     n = mkastbinary(type, left, right, NO_VALUE);
-
-    // TODO: Check type
     return n;
 }
 
-// Parse a print statement
+// Parse a block statement
+static ASTnode *block_statement(void)
+{
+    ASTnode *stmt, *seq = NULL;
+
+    // Match syntax
+    match(T_LBRACE, "{");
+
+    // Parse the statements
+    while (CurrentToken.type != T_RBRACE && CurrentToken.type != T_EOF)
+    {
+        stmt = statement();
+
+        if (stmt)
+        {
+            if (seq == NULL)
+            {
+                seq = stmt;
+            }
+            else
+            {
+                seq = mkastbinary(A_SEQ, seq, stmt, NO_VALUE);
+            }
+        }
+    }
+
+    // Match syntax
+    match(T_RBRACE, "}");
+    return seq;
+}
+
+// Parse an if-else statement
+static ASTnode *ifelse_statement(void)
+{
+    ASTnode *n, *left, *mid, *right = NULL;
+
+    // Match the syntax
+    match(T_IF, "if");
+    match(T_LPAREN, "(");
+
+    // Parse the condition
+    left = expression();
+    if (left->ptype != P_BOOL)
+    {
+        fprintf(stderr, "Type Error: if condition must be boolean (%d:%d)", Line, Column);
+        exit(1);
+    }
+
+    // Match the syntax
+    match(T_RPAREN, ")");
+
+    // Get the true statement
+    mid = statement();
+
+    // Check if there is an else statement
+    if (CurrentToken.type == T_ELSE)
+    {
+        scan(&CurrentToken);
+        right = statement();
+    }
+
+    // Create the AST
+    n = mkastternary(A_IFELSE, left, mid, right, NO_VALUE);
+    return n;
+}
+
+// Parse a match statement
+static ASTnode *match_statement(void)
+{
+    ASTnode *n, *d = NULL, *left, *right = NULL;
+
+    // Match the syntax
+    match(T_MATCH, "match");
+    match(T_LPAREN, "(");
+
+    // Parse the condition
+    left = expression();
+
+    // Match the syntax
+    match(T_RPAREN, ")");
+    match(T_LBRACE, "{");
+
+    // Get all the match cases
+    while (CurrentToken.type != T_RBRACE)
+    {
+        ASTnode *c, *val, *body;
+
+        // Get default case
+        if (CurrentToken.type == T_UNDERSCORE)
+        {
+            scan(&CurrentToken);
+            val = NULL;
+        }
+        // Get case
+        else
+        {
+            val = expression();
+        }
+
+        // Match the syntax
+        match(T_COLON, ":");
+
+        // Get the body
+        body = statement();
+
+        // Make new case
+        c = mkastternary(A_MATCH, val, body, NULL, NO_VALUE);
+
+        if (val == NULL)
+        {
+            if (d != NULL)
+            {
+                fprintf(stderr, "Syntax Error: multiple defaults in match\n");
+            }
+            d = c;
+        }
+        else
+        {
+            // Link case with other
+            if (right == NULL)
+            {
+                right = c;
+            }
+            else
+            {
+                n->right = c;
+            }
+            n = c;
+        }
+    }
+
+    // Match the syntax
+    match(T_RBRACE, "}");
+
+    // Add default case
+    if (d != NULL)
+    {
+        if (right == NULL)
+        {
+            right = d;
+        }
+        else
+        {
+            n->right = d;
+        }
+    }
+
+    // Create the AST
+    n = mkastbinary(A_MATCH, left, right, NO_VALUE);
+    return n;
+}
+
+// Parse a loop statement
+static ASTnode *loop_statement(void)
+{
+    ASTnode *n, *left, *right;
+    ASTnode *init = NULL, *upd = NULL;
+
+    // Match the syntax
+    match(T_LOOP, "loop");
+
+    // Infinite loop
+    if (CurrentToken.type != T_LPAREN)
+    {
+        left = mkastleaf(A_TRUE, P_BOOL, (Value){1});
+
+        // Parse statement
+        right = statement();
+
+        // Create the AST
+        n = mkastternary(A_LOOP, left, right, NULL, NO_VALUE);
+        return n;
+    }
+
+    // Match the syntax
+    match(T_LPAREN, "(");
+
+    if (CurrentToken.type == T_SEMICOLON) // For loop without init
+    {
+        scan(&CurrentToken);
+    }
+    else if (CurrentToken.type == T_VAR) // For loop with var declaration
+    {
+        // Parse var declaration
+        init = semicolon(var_declaration);
+    }
+    else if (CurrentToken.type == T_IDENT)
+    {
+        int next = peek();
+
+        if (next == T_ASSIGN || next == T_ASPLUS || next == T_ASMINUS || next == T_ASSTAR || next == T_ASSLASH || next == T_ASPERCENT || next == T_ASDSTAR || next == T_ASDAMPERSAND || next == T_ASDPIPE) // For loop with initiation
+        {
+            // Parse var assignment
+            init = semicolon(assignment_statement);
+        }
+        else // While loop
+        {
+            // Read an expression
+            left = expression();
+            // Match the syntax
+            match(T_RPAREN, ")");
+            // Parse statement
+            right = statement();
+            // Create the AST
+            n = mkastternary(A_LOOP, left, right, NULL, NO_VALUE);
+            return n;
+        }
+    }
+    else // While loop
+    {
+        // Read an expression
+        left = expression();
+        // Match the syntax
+        match(T_RPAREN, ")");
+        // Parse statement
+        right = statement();
+        // Create the AST
+        n = mkastternary(A_LOOP, left, right, NULL, NO_VALUE);
+        return n;
+    }
+
+    // Parse condition
+    if (CurrentToken.type != T_SEMICOLON)
+    {
+        left = semicolon(expression);
+        if (left->ptype != P_BOOL)
+        {
+            fprintf(stderr, "Type Error: loop condition must be boolean\n");
+            exit(1);
+        }
+    }
+    else
+    {
+        left = mkastleaf(A_TRUE, P_BOOL, (Value){1});
+        match(T_SEMICOLON, ";");
+    }
+
+    // Parse update
+    if (CurrentToken.type != T_RPAREN)
+    {
+        upd = assignment_statement();
+    }
+    match(T_RPAREN, ")");
+
+    // Parse statement
+    right = statement();
+
+    // Create the AST
+    n = mkastternary(A_LOOP, left, right, upd, NO_VALUE);
+    if (init != NULL)
+    {
+        n = mkastbinary(A_SEQ, init, n, NO_VALUE);
+    }
+    return n;
+}
+
+// Parse a stop statement
+static ASTnode *stop_statement(void)
+{
+    // Match the syntax
+    match(T_STOP, "stop");
+    return mkastleaf(A_STOP, NO_PRIM, NO_VALUE);
+}
+
+// Parse a jump statement
+static ASTnode *jump_statement(void)
+{
+    // Match the syntax
+    match(T_NEXT, "next");
+    return mkastleaf(A_NEXT, NO_PRIM, NO_VALUE);
+}
+
+// TODO: replace with std library
 static ASTnode *print_statement(void)
 {
     ASTnode *expr;
@@ -144,42 +422,44 @@ static ASTnode *print_statement(void)
     // Parse an expression
     expr = expression();
 
-    // Match syntax
+    // Match the sintax
     match(T_RPAREN, ")");
-
     return mkastunary(A_PRINT, expr, NO_VALUE);
 }
 
 // Parse a statement
 static ASTnode *statement(void)
 {
-    ASTnode *stmt;
-
     switch (CurrentToken.type)
     {
     case T_IDENT:
-        stmt = assignment_statement();
-        break;
+        return semicolon(assignment_statement);
     case T_VAR:
-        stmt = var_declaration();
-        break;
+        return semicolon(var_declaration);
+    case T_IF:
+        return ifelse_statement();
+    case T_MATCH:
+        return match_statement();
+    case T_LOOP:
+        return loop_statement();
+    case T_STOP:
+        return semicolon(stop_statement);
+    case T_NEXT:
+        return semicolon(jump_statement);
     case T_PRINT:
-        stmt = print_statement();
-        break;
+        return semicolon(print_statement);
+    case T_LBRACE:
+        return block_statement();
     default:
         fprintf(stderr, "Syntax Error: unexpected token (%d:%d)\n", Line, Column);
         exit(1);
     }
-
-    match(T_SEMICOLON, ";");
-    return stmt;
 }
 
 // Parse multiple statements
 ASTnode *compound_statement(void)
 {
-    ASTnode *seq = NULL;
-    ASTnode *stmt;
+    ASTnode *stmt, *seq = NULL;
 
     // Parse the statements
     while (CurrentToken.type != T_EOF)

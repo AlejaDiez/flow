@@ -152,7 +152,7 @@ static ASTnode *binary(int ptp)
     left = primary();
     // Check the token precedence if it is higher than the previous one
     tokentype = CurrentToken.type;
-    while (!(tokentype == T_SEMICOLON || tokentype == T_RPAREN) && op_precedence(tokentype) > ptp)
+    while (!(tokentype == T_RPAREN || tokentype == T_SEMICOLON || tokentype == T_COLON) && op_precedence(tokentype) > ptp)
     {
         // Read next token
         scan(&CurrentToken);

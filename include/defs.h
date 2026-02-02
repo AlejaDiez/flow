@@ -59,11 +59,18 @@ typedef enum TokenType
     T_INTLIT,
     T_TRUE,
     T_FALSE,
+    T_UNDERSCORE,
     // Types
     T_INT,
     T_BOOL,
     // Keywords
     T_VAR,
+    T_IF,
+    T_ELSE,
+    T_MATCH,
+    T_LOOP,
+    T_STOP,
+    T_NEXT,
     T_PRINT,
     // Punctuation
     T_COLON,
@@ -120,6 +127,11 @@ typedef enum ASTnodeType
     A_TRUE,
     A_FALSE,
     // Statements
+    A_IFELSE,
+    A_MATCH,
+    A_LOOP,
+    A_STOP,
+    A_NEXT,
     A_PRINT,
     // Grouping
     A_SEQ
@@ -130,6 +142,7 @@ typedef struct ASTnode
     ASTnodeType type;
     PType ptype;
     struct ASTnode *left;
+    struct ASTnode *mid;
     struct ASTnode *right;
     Value value;
 } ASTnode;

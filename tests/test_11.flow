@@ -1,0 +1,62 @@
+# Loop infinito
+# loop {
+#     print(0);
+# }
+
+# Salida
+# 0
+# 0
+# 0
+# 0
+# 0
+# .
+# .
+# .
+
+
+
+
+# Loop while
+var x: int = 0;
+
+loop (x < 5) {
+    print(x);
+    x += 1;
+}
+
+# Salida
+# 0
+# 1
+# 2
+# 3
+# 4
+
+
+
+
+# Loop for
+loop (var i: int = 0; i < 5; i += 1) {
+    print(i);
+}
+
+# Salida
+# 0
+# 1
+# 2
+# 3
+# 4
+
+
+
+
+# Loop for
+loop (var i: int = 0; i < 5;) {
+    print(i);
+}
+
+# Salida
+# 0
+# 1
+# 2
+# 3
+# 4

@@ -135,6 +135,12 @@ static int keyword(char *s)
             return T_BOOL;
         }
         break;
+    case 'e':
+        if (!strcmp(s, "else"))
+        {
+            return T_ELSE;
+        }
+        break;
     case 'f':
         if (!strcmp(s, "false"))
         {
@@ -142,15 +148,43 @@ static int keyword(char *s)
         }
         break;
     case 'i':
-        if (!strcmp(s, "int"))
+        if (!strcmp(s, "if"))
+        {
+            return T_IF;
+        }
+        else if (!strcmp(s, "int"))
         {
             return T_INT;
+        }
+        break;
+    case 'l':
+        if (!strcmp(s, "loop"))
+        {
+            return T_LOOP;
+        }
+        break;
+    case 'm':
+        if (!strcmp(s, "match"))
+        {
+            return T_MATCH;
+        }
+        break;
+    case 'n':
+        if (!strcmp(s, "next"))
+        {
+            return T_NEXT;
         }
         break;
     case 'p':
         if (!strcmp(s, "print"))
         {
             return T_PRINT;
+        }
+        break;
+    case 's':
+        if (!strcmp(s, "stop"))
+        {
+            return T_STOP;
         }
         break;
     case 't':
@@ -400,12 +434,20 @@ int scan(Token *t)
 
             scanident(c, buffer, MAX_LEN - 1);
 
-            int tokentype = keyword(buffer);
-
-            t->type = tokentype;
-            if (tokentype == T_IDENT)
+            if (strcmp(buffer, "_") == 0)
             {
-                t->value.string = strdup(buffer);
+                t->type = T_UNDERSCORE;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                int tokentype = keyword(buffer);
+
+                t->type = tokentype;
+                if (tokentype == T_IDENT)
+                {
+                    t->value.string = strdup(buffer);
+                }
             }
             break;
         }
@@ -427,4 +469,33 @@ void match(TokenType t, char *what)
         fprintf(stderr, "Syntax Error: expected %s but found other token (%d:%d)\n", what, Line, Column);
         exit(1);
     }
+}
+
+// Look ahead in the input to see the next tokens without consuming them
+int peek(void)
+{
+    Token tmpToken;
+
+    // Save current state
+    struct
+    {
+        int putback;
+        int line;
+        int column;
+        int length;
+    } state = {Putback, Line, Column, Length};
+    long pos = ftell(InputFile);
+
+    // Scan the next token
+    scan(&tmpToken);
+
+    // Restore state
+    fseek(InputFile, pos, SEEK_SET);
+    Putback = state.putback;
+    Line = state.line;
+    Column = state.column;
+    Length = state.length;
+
+    // Return the token
+    return tmpToken.type;
 }
