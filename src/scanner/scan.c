@@ -163,6 +163,12 @@ static int keyword(char *s)
             return T_LOOP;
         }
         break;
+    case 'm':
+        if (!strcmp(s, "match"))
+        {
+            return T_MATCH;
+        }
+        break;
     case 'n':
         if (!strcmp(s, "next"))
         {
@@ -428,12 +434,20 @@ int scan(Token *t)
 
             scanident(c, buffer, MAX_LEN - 1);
 
-            int tokentype = keyword(buffer);
-
-            t->type = tokentype;
-            if (tokentype == T_IDENT)
+            if (strcmp(buffer, "_") == 0)
             {
-                t->value.string = strdup(buffer);
+                t->type = T_UNDERSCORE;
+                t->value = NO_VALUE;
+            }
+            else
+            {
+                int tokentype = keyword(buffer);
+
+                t->type = tokentype;
+                if (tokentype == T_IDENT)
+                {
+                    t->value.string = strdup(buffer);
+                }
             }
             break;
         }

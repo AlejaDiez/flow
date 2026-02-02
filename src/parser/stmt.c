@@ -204,6 +204,92 @@ static ASTnode *ifelse_statement(void)
     return n;
 }
 
+// Parse a match statement
+static ASTnode *match_statement(void)
+{
+    ASTnode *n, *d = NULL, *left, *right = NULL;
+
+    // Match the syntax
+    match(T_MATCH, "match");
+    match(T_LPAREN, "(");
+
+    // Parse the condition
+    left = expression();
+
+    // Match the syntax
+    match(T_RPAREN, ")");
+    match(T_LBRACE, "{");
+
+    // Get all the match cases
+    while (CurrentToken.type != T_RBRACE)
+    {
+        ASTnode *c, *val, *body;
+
+        // Get default case
+        if (CurrentToken.type == T_UNDERSCORE)
+        {
+            scan(&CurrentToken);
+            val = NULL;
+        }
+        // Get case
+        else
+        {
+            val = expression();
+        }
+
+        // Match the syntax
+        match(T_COLON, ":");
+
+        // Get the body
+        body = statement();
+
+        // Make new case
+        c = mkastternary(A_MATCH, val, body, NULL, NO_VALUE);
+
+        if (val == NULL)
+        {
+            if (d != NULL)
+            {
+                fprintf(stderr, "Syntax Error: multiple defaults in match\n");
+            }
+            d = c;
+        }
+        else
+        {
+            // Link case with other
+            if (right == NULL)
+            {
+                right = c;
+            }
+            else
+            {
+                n->right = c;
+            }
+            n = c;
+        }
+    }
+
+    // Match the syntax
+    match(T_RBRACE, "}");
+
+    // Add default case
+    if (d != NULL)
+    {
+        if (right == NULL)
+        {
+            right = d;
+        }
+        else
+        {
+            n->right = d;
+        }
+    }
+
+    // Create the AST
+    n = mkastbinary(A_MATCH, left, right, NO_VALUE);
+    return n;
+}
+
 // Parse a loop statement
 static ASTnode *loop_statement(void)
 {
@@ -352,6 +438,8 @@ static ASTnode *statement(void)
         return semicolon(var_declaration);
     case T_IF:
         return ifelse_statement();
+    case T_MATCH:
+        return match_statement();
     case T_LOOP:
         return loop_statement();
     case T_STOP:

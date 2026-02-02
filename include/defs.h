@@ -59,6 +59,7 @@ typedef enum TokenType
     T_INTLIT,
     T_TRUE,
     T_FALSE,
+    T_UNDERSCORE,
     // Types
     T_INT,
     T_BOOL,
@@ -66,6 +67,7 @@ typedef enum TokenType
     T_VAR,
     T_IF,
     T_ELSE,
+    T_MATCH,
     T_LOOP,
     T_STOP,
     T_NEXT,
@@ -126,6 +128,7 @@ typedef enum ASTnodeType
     A_FALSE,
     // Statements
     A_IFELSE,
+    A_MATCH,
     A_LOOP,
     A_STOP,
     A_NEXT,

@@ -224,6 +224,54 @@ static int cgAST(ASTnode *n)
         }
         return NO_REG;
     }
+    case A_MATCH:
+    {
+        int Lend, Lnext_check;
+        ASTnode *c;
+
+        // Get labels
+        Lend = CG->label();
+
+        // Add loop to the stack
+        push_control(A_MATCH, 0, Lend);
+
+        // Get all cases
+        c = n->right;
+        while (c != NULL)
+        {
+            // Create next check label
+            Lnext_check = CG->label();
+
+            if (c->left != NULL)
+            {
+                rightreg = cgAST(n->left);
+                leftreg = cgAST(c->left);
+
+                // Check condition
+                leftreg = CG->cmp(rightreg, leftreg, "eq");
+                CG->jump_cond(leftreg, Lnext_check);
+                CG->free_register(leftreg);
+            }
+
+            // Case stetement
+            midreg = cgAST(c->mid);
+            if (midreg != NO_REG)
+            {
+                CG->free_register(midreg);
+            }
+
+            // Generate next label
+            CG->genlabel(Lnext_check);
+            
+            c = c->right;
+        }
+        // Generate end label
+        CG->genlabel(Lend);
+
+        // Remove loop from the stack
+        pop_control();
+        return NO_REG;
+    }
     case A_LOOP:
     {
         int Lstart, Lcontinue, Lend;
