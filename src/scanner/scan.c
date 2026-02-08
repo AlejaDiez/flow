@@ -146,6 +146,10 @@ static int keyword(char *s)
         {
             return T_FALSE;
         }
+        else if (!strcmp(s, "fun"))
+        {
+            return T_FUN;
+        }
         break;
     case 'i':
         if (!strcmp(s, "if"))

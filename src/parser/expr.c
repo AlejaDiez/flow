@@ -113,11 +113,22 @@ static ASTnode *primary(void)
         id = findglob(CurrentToken.value.string);
         if (id == -1)
         {
-            fprintf(stderr, "Syntax Error: undeclared variable '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
+            fprintf(stderr, "Syntax Error: undeclared identifier '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
             exit(1);
         }
-        n = mkastleaf(A_IDENT, GlobalSymbols[id].type, (Value){id});
-        scan(&CurrentToken);
+        switch (GlobalSymbols[id].stype)
+        {
+        case S_VARIABLE:
+            n = mkastleaf(A_IDENT, GlobalSymbols[id].ptype, (Value){id});
+            scan(&CurrentToken);
+            break;
+        case S_FUNCTION:
+            n = mkastleaf(A_CALL, GlobalSymbols[id].ptype, (Value){id});
+            scan(&CurrentToken);
+            match(T_LPAREN, "(");
+            match(T_RPAREN, ")");
+            break;
+        }
         return n;
     case T_INTLIT:
         n = mkastleaf(A_INTLIT, P_INT, CurrentToken.value);

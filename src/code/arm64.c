@@ -103,6 +103,23 @@ static void arm64_genlabel(int l)
     fprintf(OutFile, "L%d:\n", l);
 }
 
+// Print a function preamble to the output file
+static void arm64_genfunlabel(int id)
+{
+    char *name = GlobalSymbols[id].name;
+
+    fprintf(OutFile, "_%s:\n", name);
+    fprintf(OutFile, "\tstp x29, x30, [sp, -16]!\n");
+    fprintf(OutFile, "\tmov x29, sp\n");
+}
+
+// Print a function postamble to the output file
+static void arm64_genfunend(void)
+{
+    fprintf(OutFile, "\tldp x29, x30, [sp], 16\n");
+    fprintf(OutFile, "\tret\n");
+}
+
 // Unconditional jump
 static void arm64_jump(int l)
 {
@@ -113,6 +130,13 @@ static void arm64_jump(int l)
 static void arm64_jump_cond(int r, int l)
 {
     fprintf(OutFile, "\tcbz %s, L%d\n", reglist[r], l);
+}
+
+// Call a function
+static int arm64_call(int id)
+{
+    fprintf(OutFile, "\tbl _%s\n", GlobalSymbols[id].name);
+    return arm64_alloc_register();
 }
 
 // MEMORY ACCESS
@@ -361,8 +385,11 @@ struct Backend ARM64_Backend = {
     .globsym = arm64_globsym,
     .label = arm64_label,
     .genlabel = arm64_genlabel,
+    .genfunlabel = arm64_genfunlabel,
+    .genfunend = arm64_genfunend,
     .jump = arm64_jump,
     .jump_cond = arm64_jump_cond,
+    .call = arm64_call,
     .loadint = arm64_loadint,
     .loadglob = arm64_loadglob,
     .storglob = arm64_storglob,

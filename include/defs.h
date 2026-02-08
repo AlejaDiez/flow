@@ -6,6 +6,7 @@
 #define NO_VALUE (Value){0}
 #define NO_REG -1
 #define NO_PRIM -1
+#define NO_MARKER -1
 
 // Values
 typedef union Value
@@ -65,6 +66,7 @@ typedef enum TokenType
     T_BOOL,
     // Keywords
     T_VAR,
+    T_FUN,
     T_IF,
     T_ELSE,
     T_MATCH,
@@ -127,8 +129,11 @@ typedef enum ASTnodeType
     A_TRUE,
     A_FALSE,
     // Statements
+    A_FUNCTION,
+    A_CALL,
     A_IFELSE,
     A_MATCH,
+    A_CASE,
     A_LOOP,
     A_STOP,
     A_NEXT,
@@ -148,10 +153,18 @@ typedef struct ASTnode
 } ASTnode;
 
 // Symbol
+typedef enum SymType
+{
+    S_VARIABLE,
+    S_FUNCTION
+} SType;
+
 typedef struct SymTable
 {
     char name[MAX_LEN];
-    PType type;
+    SType stype;
+    PType ptype;
+    int marker;
 } SymTable;
 
 // Code Generation
@@ -166,8 +179,11 @@ struct Backend
     void (*globsym)(int);
     int (*label)(void);
     void (*genlabel)(int);
+    void (*genfunlabel)(int);
+    void (*genfunend)(void);
     void (*jump)(int);
     void (*jump_cond)(int, int);
+    int (*call)(int);
     int (*loadint)(int);
     int (*loadglob)(int);
     int (*storglob)(int, int);

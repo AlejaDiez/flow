@@ -182,6 +182,19 @@ static int cgAST(ASTnode *n)
     case A_FALSE:
         return CG->loadint(0);
     // STATEMENTS
+    case A_FUNCTION:
+    {
+        int L_after = CG->label();
+
+        CG->jump(L_after);
+        CG->genfunlabel(n->value.integer);
+        cgAST(n->left);
+        CG->genfunend();
+        CG->genlabel(L_after);
+        return NO_REG;
+    }
+    case A_CALL:
+        return CG->call(n->value.integer);
     case A_IFELSE:
     {
         int Lfalse, Lend;
@@ -262,7 +275,7 @@ static int cgAST(ASTnode *n)
 
             // Generate next label
             CG->genlabel(Lnext_check);
-            
+
             c = c->right;
         }
         // Generate end label
@@ -367,12 +380,15 @@ void gencode(ASTnode *n)
 {
     int reg;
 
+    CG->freeall_registers();
     CG->preamble();
+
     reg = cgAST(n);
     if (reg != NO_REG)
     {
         CG->free_register(reg);
     }
+
     CG->postamble();
     CG->data_seg();
 }

@@ -55,6 +55,8 @@ ASTnode *mkastunary(ASTnodeType type, ASTnode *child, Value value)
             exit(1);
         }
         return mkastnode(type, P_BOOL, child, NULL, NULL, value);
+    case A_FUNCTION:
+        return mkastnode(type, P_VOID, child, NULL, NULL, value);
     default:
         return mkastnode(type, NO_PRIM, child, NULL, NULL, value);
     }
