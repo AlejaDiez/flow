@@ -52,12 +52,10 @@ static int arm64_alloc_register(void)
 // Write the assembly preamble
 static void arm64_preamble(void)
 {
-    arm64_freeall_registers();
-    fprintf(OutFile, "\t.global _main\n");
-    fprintf(OutFile, "\t.align 2\n");
     fprintf(OutFile, "\t.text\n");
-    fprintf(OutFile, "_main:\n");
-    // Save Frame Pointer (x29) and Link Register (x30) to stack
+    fprintf(OutFile, "\t.global _start\n");
+    fprintf(OutFile, "\t.align 2\n");
+    fprintf(OutFile, "_start:\n");
     fprintf(OutFile, "\tstp x29, x30, [sp, -16]!\n");
     fprintf(OutFile, "\tmov x29, sp\n");
 }
@@ -65,26 +63,23 @@ static void arm64_preamble(void)
 // Write the function epilogue
 static void arm64_postamble(void)
 {
-    fprintf(OutFile, "\tmov w0, #0\n");
-    fprintf(OutFile, "\tldp x29, x30, [sp], 16\n");
-    fprintf(OutFile, "\tret\n");
+    fprintf(OutFile, "\tmov x0, #0\n");
+    fprintf(OutFile, "\tmov x16, #1\n");
+    fprintf(OutFile, "\tsvc #0x80\n");
 }
 
 // Define the data section
 static void arm64_data_seg(void)
 {
     fprintf(OutFile, "\t.data\n");
-    // Format string for printf
-    fprintf(OutFile, "_.str:\n");
-    fprintf(OutFile, "\t.asciz \"%%ld\\n\"\n");
 }
 
 // Generate a global symbol definition
 static void arm64_globsym(int id)
 {
-    int type = GlobalSymbols[id].type;
+    PType ptype = GlobalSymbols[id].ptype;
 
-    switch (type)
+    switch (ptype)
     {
     case P_INT:
         fprintf(OutFile, "\t.comm %s, 8, 3\n", GlobalSymbols[id].name);
@@ -133,7 +128,7 @@ static int arm64_loadint(int v)
 // Load a global variable into a register
 static int arm64_loadglob(int id)
 {
-    int type = GlobalSymbols[id].type;
+    PType ptype = GlobalSymbols[id].ptype;
     int r = arm64_alloc_register();
 
     // Load address of the variable
@@ -141,7 +136,7 @@ static int arm64_loadglob(int id)
     fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r], reglist[r], GlobalSymbols[id].name);
 
     // Load value based on type
-    switch (type)
+    switch (ptype)
     {
     case P_INT:
         fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]);
@@ -156,7 +151,7 @@ static int arm64_loadglob(int id)
 // Store a register value into a global variable
 static int arm64_storglob(int r, int id)
 {
-    int type = GlobalSymbols[id].type;
+    PType ptype = GlobalSymbols[id].ptype;
     int r_addr = arm64_alloc_register();
 
     // Load address of the variable
@@ -164,7 +159,7 @@ static int arm64_storglob(int r, int id)
     fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r_addr], reglist[r_addr], GlobalSymbols[id].name);
 
     // Store value based on type
-    switch (type)
+    switch (ptype)
     {
     case P_INT:
         fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[r_addr]);
@@ -292,19 +287,66 @@ static int arm64_or(int r1, int r2)
 }
 
 // I/O
-// Print integer using C library printf
+// Print integer
 static void arm64_printint(int r)
 {
-    // Move value to print to stack
-    fprintf(OutFile, "\tstr %s, [sp]\n", reglist[r]);
+    int L_convert_loop = arm64_label();
+    int L_print_now = arm64_label();
 
-    // Load format string address into x0
-    fprintf(OutFile, "\tadrp x0, _.str@PAGE\n");
-    fprintf(OutFile, "\tadd x0, x0, _.str@PAGEOFF\n");
+    // 1. Preparar pila (32 bytes)
+    fprintf(OutFile, "\tsub sp, sp, #32\n");
 
-    // Call printf
-    fprintf(OutFile, "\tbl _printf\n");
+    // 2. Mover número a x9 (Registro temporal)
+    fprintf(OutFile, "\tmov x9, %s\n", reglist[r]);
 
+    // 3. Puntero al final del buffer (sp + 30)
+    fprintf(OutFile, "\tadd x10, sp, #30\n");
+
+    // 4. Poner salto de línea ('\n')
+    fprintf(OutFile, "\tmov w11, #10\n");
+    fprintf(OutFile, "\tstrb w11, [x10]\n");
+    fprintf(OutFile, "\tsub x10, x10, #1\n"); // Retroceder puntero
+
+    // 5. BUCLE DE CONVERSIÓN (Tipo Do-While)
+    arm64_genlabel(L_convert_loop);
+
+    // A. División y Módulo
+    fprintf(OutFile, "\tmov x11, #10\n");
+    fprintf(OutFile, "\tudiv x12, x9, x11\n");      // x12 = Cociente (x9 / 10)
+    fprintf(OutFile, "\tmsub x13, x12, x11, x9\n"); // x13 = Resto (x9 - x12*10)
+
+    // B. Convertir a ASCII y guardar
+    fprintf(OutFile, "\tadd x13, x13, #48\n"); // 0 -> '0'
+    fprintf(OutFile, "\tstrb w13, [x10]\n");   // Guardar en la pila
+    fprintf(OutFile, "\tsub x10, x10, #1\n");  // Mover puntero atrás
+
+    // C. Actualizar el número y comprobar
+    fprintf(OutFile, "\tmov x9, x12\n"); // x9 = Cociente
+
+    // D. Condición del Do-While: ¿Es 0 el cociente?
+    // cbnz: Compare and Branch if Not Zero
+    // Si x9 NO es 0, volvemos arriba. Si es 0, seguimos bajando.
+    fprintf(OutFile, "\tcbnz x9, L%d\n", L_convert_loop);
+
+    // 6. IMPRIMIR (Syscall)
+    arm64_genlabel(L_print_now);
+
+    // Ajustar puntero al inicio real (porque el bucle restó 1 de más al final)
+    fprintf(OutFile, "\tadd x10, x10, #1\n");
+
+    // Calcular longitud: (sp + 31) - inicio
+    fprintf(OutFile, "\tadd x11, sp, #30\n"); // Dirección del final (\n)
+    fprintf(OutFile, "\tsub x2, x11, x10\n"); // x2 = Diferencia
+    fprintf(OutFile, "\tadd x2, x2, #1\n");   // +1 para incluir el \n
+
+    // Syscall Write
+    fprintf(OutFile, "\tmov x0, #1\n");  // stdout
+    fprintf(OutFile, "\tmov x1, x10\n"); // buffer address
+    fprintf(OutFile, "\tmov x16, #4\n"); // write (macOS)
+    fprintf(OutFile, "\tsvc #0x80\n");
+
+    // 7. Limpiar pila y liberar registro AST
+    fprintf(OutFile, "\tadd sp, sp, #32\n");
     arm64_free_register(r);
 }
 
