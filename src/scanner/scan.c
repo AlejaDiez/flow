@@ -185,6 +185,12 @@ static int keyword(char *s)
             return T_PRINT;
         }
         break;
+    case 'r':
+        if (!strcmp(s, "return"))
+        {
+            return T_RETURN;
+        }
+        break;
     case 's':
         if (!strcmp(s, "stop"))
         {
@@ -201,6 +207,10 @@ static int keyword(char *s)
         if (!strcmp(s, "var"))
         {
             return T_VAR;
+        }
+        else if (!strcmp(s, "void"))
+        {
+            return T_VOID;
         }
         break;
     }

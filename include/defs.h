@@ -6,7 +6,6 @@
 #define NO_VALUE (Value){0}
 #define NO_REG -1
 #define NO_PRIM -1
-#define NO_MARKER -1
 
 // Values
 typedef union Value
@@ -62,11 +61,13 @@ typedef enum TokenType
     T_FALSE,
     T_UNDERSCORE,
     // Types
+    T_VOID,
     T_INT,
     T_BOOL,
     // Keywords
     T_VAR,
     T_FUN,
+    T_RETURN,
     T_IF,
     T_ELSE,
     T_MATCH,
@@ -131,6 +132,7 @@ typedef enum ASTnodeType
     // Statements
     A_FUNCTION,
     A_CALL,
+    A_RETURN,
     A_IFELSE,
     A_MATCH,
     A_CASE,
@@ -164,7 +166,6 @@ typedef struct SymTable
     char name[MAX_LEN];
     SType stype;
     PType ptype;
-    int marker;
 } SymTable;
 
 // Code Generation
@@ -184,6 +185,7 @@ struct Backend
     void (*jump)(int);
     void (*jump_cond)(int, int);
     int (*call)(int);
+    void (*ret)(int);
     int (*loadint)(int);
     int (*loadglob)(int);
     int (*storglob)(int, int);

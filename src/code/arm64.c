@@ -135,8 +135,18 @@ static void arm64_jump_cond(int r, int l)
 // Call a function
 static int arm64_call(int id)
 {
+    int r = arm64_alloc_register();
+
     fprintf(OutFile, "\tbl _%s\n", GlobalSymbols[id].name);
-    return arm64_alloc_register();
+    fprintf(OutFile, "\tmov %s, x0\n", reglist[r]);
+    return r;
+}
+
+// Return a value
+static void arm64_return(int r)
+{
+    fprintf(OutFile, "\tmov x0, %s\n", reglist[r]);
+    arm64_free_register(r);
 }
 
 // MEMORY ACCESS
@@ -390,6 +400,7 @@ struct Backend ARM64_Backend = {
     .jump = arm64_jump,
     .jump_cond = arm64_jump_cond,
     .call = arm64_call,
+    .ret = arm64_return,
     .loadint = arm64_loadint,
     .loadglob = arm64_loadglob,
     .storglob = arm64_storglob,

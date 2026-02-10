@@ -15,6 +15,7 @@ static struct
     int label_end;
 } control_stack[MAX_NESTED_CONTROLS];
 static int control_top = -1;
+static int current_fun = -1;
 
 // Control stack management, add a new control
 static void push_control(int type, int cont, int end)
@@ -185,16 +186,31 @@ static int cgAST(ASTnode *n)
     case A_FUNCTION:
     {
         int L_after = CG->label();
+        int L_end = CG->label();
+        int L_old = current_fun;
+
+        current_fun = L_end;
 
         CG->jump(L_after);
         CG->genfunlabel(n->value.integer);
         cgAST(n->left);
+        CG->genlabel(L_end);
         CG->genfunend();
         CG->genlabel(L_after);
+        current_fun = L_old;
         return NO_REG;
     }
     case A_CALL:
         return CG->call(n->value.integer);
+    case A_RETURN:
+    {
+        if (n->left)
+        {
+            CG->ret(cgAST(n->left));
+        }
+        CG->jump(current_fun);
+        return NO_REG;
+    }
     case A_IFELSE:
     {
         int Lfalse, Lend;

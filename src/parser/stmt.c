@@ -6,6 +6,8 @@
 #include "data.h"
 #include "decl.h"
 
+static PType current_fun_type = P_VOID;
+
 static ASTnode *statement(void);
 static ASTnode *block_statement(void);
 
@@ -57,7 +59,7 @@ static ASTnode *var_declaration(void)
     scan(&CurrentToken);
 
     // Add the variable to the global symbol table
-    id = addglob(name, S_VARIABLE, ptype, NO_MARKER);
+    id = addglob(name, S_VARIABLE, ptype);
     genglobsym(id);
 
     // Try to initialize the variable
@@ -75,9 +77,9 @@ static ASTnode *var_declaration(void)
 static ASTnode *function_declaration(void)
 {
     ASTnode *n, *child;
-    int id, marker = NO_MARKER;
+    int id;
     char name[MAX_LEN];
-    PType ptype = P_VOID;
+    PType prevptype = current_fun_type;
 
     // Match the sintax
     match(T_FUN, "fun");
@@ -94,11 +96,39 @@ static ASTnode *function_declaration(void)
     match(T_LPAREN, "(");
     match(T_RPAREN, ")");
 
+    // Parse type
+    if (CurrentToken.type == T_COLON)
+    {
+        match(T_COLON, ":");
+        switch (CurrentToken.type)
+        {
+        case T_VOID:
+            current_fun_type = P_VOID;
+            break;
+        case T_INT:
+            current_fun_type = P_INT;
+            break;
+        case T_BOOL:
+            current_fun_type = P_BOOL;
+            break;
+        default:
+            fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+        scan(&CurrentToken);
+    }
+    else
+    {
+        current_fun_type = P_VOID;
+    }
+
     // Add the variable to the global symbol table
-    id = addglob(name, S_FUNCTION, ptype, marker);
+    id = addglob(name, S_FUNCTION, current_fun_type);
 
     // Parse statement
     child = statement();
+
+    current_fun_type = prevptype;
 
     // Create the AST
     n = mkastunary(A_FUNCTION, child, (Value){id});
@@ -202,6 +232,43 @@ static ASTnode *call_statement(void)
     // Match the sintax
     match(T_LPAREN, "(");
     match(T_RPAREN, ")");
+    return n;
+}
+
+// Parse a return
+static ASTnode *return_statement(void)
+{
+    ASTnode *n = NULL;
+
+    // Match the syntax
+    match(T_RETURN, "return");
+
+    // Check for expression
+    if (CurrentToken.type != T_SEMICOLON)
+    {
+        n = expression();
+    }
+
+    // Check type
+    if (current_fun_type == P_VOID && n != NULL)
+    {
+        fprintf(stderr, "Type Error: function is void but returns a value (%d:%d)\n", Line, Column);
+        exit(1);
+    }
+    else if (current_fun_type != P_VOID && n == NULL)
+    {
+        fprintf(stderr, "Type Error: function expects a return value (%d:%d)\n", Line, Column);
+        exit(1);
+    }
+    else if (n != NULL && n->ptype != current_fun_type)
+    {
+        fprintf(stderr, "Type Error: incompatible return type, expected %d, got %d (%d:%d)\n",
+                current_fun_type, n->ptype, Line, Column);
+        exit(1);
+    }
+
+    // Create the AST
+    n = mkastunary(A_RETURN, n, NO_VALUE);
     return n;
 }
 
@@ -493,6 +560,8 @@ static ASTnode *statement(void)
         return semicolon(var_declaration);
     case T_FUN:
         return function_declaration();
+    case T_RETURN:
+        return semicolon(return_statement);
     case T_IF:
         return ifelse_statement();
     case T_MATCH:
