@@ -29,7 +29,7 @@ static ASTnode *var_declaration(void)
     char name[MAX_LEN];
     PType ptype;
 
-    // Match the sintax
+    // Match the syntax
     match(T_VAR, "var");
     if (CurrentToken.type != T_IDENT)
     {
@@ -40,7 +40,7 @@ static ASTnode *var_declaration(void)
     strncpy(name, CurrentToken.value.string, MAX_LEN);
     scan(&CurrentToken);
 
-    // Match the sintax
+    // Match the syntax
     match(T_COLON, ":");
 
     // Parse type
@@ -59,7 +59,7 @@ static ASTnode *var_declaration(void)
     scan(&CurrentToken);
 
     // Add the variable to the global symbol table
-    id = addglob(name, S_VARIABLE, ptype);
+    id = addglob(name, S_VARIABLE, ptype, 0);
     genglobsym(id);
 
     // Try to initialize the variable
@@ -80,8 +80,10 @@ static ASTnode *function_declaration(void)
     int id;
     char name[MAX_LEN];
     PType prevptype = current_fun_type;
+    int paramsCount = 0;
+    int paramIDs[MAX_PARAMS];
 
-    // Match the sintax
+    // Match the syntax
     match(T_FUN, "fun");
     if (CurrentToken.type != T_IDENT)
     {
@@ -92,8 +94,71 @@ static ASTnode *function_declaration(void)
     strncpy(name, CurrentToken.value.string, MAX_LEN);
     scan(&CurrentToken);
 
-    // Match the sintax
+    // Match the syntax
     match(T_LPAREN, "(");
+
+    // Parse params
+    while (CurrentToken.type != T_RPAREN)
+    {
+        int id;
+        char name[MAX_LEN];
+        PType ptype;
+
+        if (CurrentToken.type != T_IDENT)
+        {
+            fprintf(stderr, "Syntax Error: expected parameter name but found other token (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+
+        // Copy the name of the variable
+        strncpy(name, CurrentToken.value.string, MAX_LEN);
+        scan(&CurrentToken);
+
+        // Match the syntax
+        match(T_COLON, ":");
+
+        // Parse type
+        switch (CurrentToken.type)
+        {
+        case T_INT:
+            ptype = P_INT;
+            break;
+        case T_BOOL:
+            ptype = P_BOOL;
+            break;
+        default:
+            fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+        scan(&CurrentToken);
+
+        // Add the variable to the global symbol table
+        id = addglob(name, S_VARIABLE, ptype, 0);
+
+        // Link param wuth function
+        if (paramsCount < MAX_PARAMS)
+        {
+            paramIDs[paramsCount] = id;
+            paramsCount++;
+        }
+        else
+        {
+            fprintf(stderr, "Syntax Error: too many parameters (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+
+        // Match the syntax
+        if (CurrentToken.type == T_COMMA)
+        {
+            match(T_COMMA, ",");
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Match the syntax
     match(T_RPAREN, ")");
 
     // Parse type
@@ -123,7 +188,11 @@ static ASTnode *function_declaration(void)
     }
 
     // Add the variable to the global symbol table
-    id = addglob(name, S_FUNCTION, current_fun_type);
+    id = addglob(name, S_FUNCTION, current_fun_type, paramsCount);
+    for (int i = 0; i < paramsCount; i++)
+    {
+        GlobalSymbols[id].params[i] = paramIDs[i];
+    }
 
     // Parse statement
     child = statement();
@@ -160,7 +229,7 @@ static ASTnode *assignment_statement(void)
     left = mkastleaf(A_IDENT, GlobalSymbols[id].ptype, (Value){id});
     scan(&CurrentToken);
 
-    // Match the sintax
+    // Match the syntax
     switch (CurrentToken.type)
     {
     case T_ASSIGN:
@@ -208,7 +277,7 @@ static ASTnode *assignment_statement(void)
 static ASTnode *call_statement(void)
 {
     int id;
-    ASTnode *n;
+    ASTnode *n, *head = NULL, *tail = NULL;
 
     // Match the syntax
     if (CurrentToken.type != T_IDENT)
@@ -221,17 +290,45 @@ static ASTnode *call_statement(void)
     id = findglob(CurrentToken.value.string);
     if (id == -1)
     {
-        fprintf(stderr, "Syntax Error: undeclared variable '%s' (%d:%d)\n", CurrentToken.value.string, Line, Column);
+        fprintf(stderr, "Syntax Error: undeclared function '%s' (%d:%d)\n", CurrentToken.value.string, Line, Column);
         exit(1);
     }
 
-    // Create the AST
-    n = mkastleaf(A_CALL, GlobalSymbols[id].ptype, (Value){id});
     scan(&CurrentToken);
 
-    // Match the sintax
+    // Match the syntax
     match(T_LPAREN, "(");
+
+    // Parse params
+    while (CurrentToken.type != T_RPAREN)
+    {
+        n = mkastbinary(A_GLUE, expression(), NULL, NO_VALUE);
+
+        if (head == NULL)
+        {
+            head = tail = n;
+        }
+        else
+        {
+            tail->right = n;
+            tail = n;
+        }
+
+        if (CurrentToken.type == T_COMMA)
+        {
+            match(T_COMMA, ",");
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Match the syntax
     match(T_RPAREN, ")");
+
+    // Create the AST
+    n = mkastunary(A_CALL, head, (Value){id});
     return n;
 }
 
@@ -525,7 +622,7 @@ static ASTnode *print_statement(void)
     // Parse an expression
     expr = expression();
 
-    // Match the sintax
+    // Match the syntax
     match(T_RPAREN, ")");
     return mkastunary(A_PRINT, expr, NO_VALUE);
 }

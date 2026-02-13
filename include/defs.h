@@ -3,6 +3,7 @@
 
 #define MAX_LEN 512
 #define MAX_SYM 256
+#define MAX_PARAMS 8
 #define NO_VALUE (Value){0}
 #define NO_REG -1
 #define NO_PRIM -1
@@ -78,6 +79,7 @@ typedef enum TokenType
     // Punctuation
     T_COLON,
     T_SEMICOLON,
+    T_COMMA,
     // Gruping
     T_LPAREN,
     T_RPAREN,
@@ -141,7 +143,8 @@ typedef enum ASTnodeType
     A_NEXT,
     A_PRINT,
     // Grouping
-    A_SEQ
+    A_SEQ,
+    A_GLUE
 } ASTnodeType;
 
 typedef struct ASTnode
@@ -166,6 +169,8 @@ typedef struct SymTable
     char name[MAX_LEN];
     SType stype;
     PType ptype;
+    int numParams;
+    int params[MAX_PARAMS];
 } SymTable;
 
 // Code Generation
@@ -185,10 +190,12 @@ struct Backend
     void (*jump)(int);
     void (*jump_cond)(int, int);
     int (*call)(int);
+    int (*loadparam)(int, int);
+    void (*storeparam)(int, int);
     void (*ret)(int);
     int (*loadint)(int);
     int (*loadglob)(int);
-    int (*storglob)(int, int);
+    int (*storeglob)(int, int);
     int (*add)(int, int);
     int (*sub)(int, int);
     int (*neg)(int);

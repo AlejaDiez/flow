@@ -417,6 +417,10 @@ int scan(Token *t)
         t->type = T_SEMICOLON;
         t->value = NO_VALUE;
         break;
+    case ',':
+        t->type = T_COMMA;
+        t->value = NO_VALUE;
+        break;
     case '(':
         t->type = T_LPAREN;
         t->value = NO_VALUE;

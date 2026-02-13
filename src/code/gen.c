@@ -138,7 +138,7 @@ static int cgAST(ASTnode *n)
         rightreg = cgAST(n->right);
         if (n->type == A_ASSIGN)
         {
-            return CG->storglob(rightreg, id);
+            return CG->storeglob(rightreg, id);
         }
         // L-Value
         leftreg = CG->loadglob(id);
@@ -172,7 +172,7 @@ static int cgAST(ASTnode *n)
             rightreg = NO_REG;
             break;
         }
-        return CG->storglob(rightreg, id);
+        return CG->storeglob(rightreg, id);
     // LITERALS
     case A_INTLIT:
         return CG->loadint(n->value.integer);
@@ -193,6 +193,13 @@ static int cgAST(ASTnode *n)
 
         CG->jump(L_after);
         CG->genfunlabel(n->value.integer);
+        // Load params
+        for (int i = 0; i < GlobalSymbols[n->value.integer].numParams; i++)
+        {
+            int r = CG->loadparam(GlobalSymbols[n->value.integer].params[i], i);
+
+            CG->free_register(r);
+        }
         cgAST(n->left);
         CG->genlabel(L_end);
         CG->genfunend();
@@ -201,7 +208,21 @@ static int cgAST(ASTnode *n)
         return NO_REG;
     }
     case A_CALL:
+    {
+        ASTnode *argNode = n->left;
+        int argIdx = 0;
+
+        while (argNode != NULL)
+        {
+            int r = cgAST(argNode->left);
+
+            CG->storeparam(r, argIdx);
+
+            argNode = argNode->right;
+            argIdx++;
+        }
         return CG->call(n->value.integer);
+    }
     case A_RETURN:
     {
         if (n->left)

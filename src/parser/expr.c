@@ -123,11 +123,45 @@ static ASTnode *primary(void)
             scan(&CurrentToken);
             break;
         case S_FUNCTION:
-            n = mkastleaf(A_CALL, GlobalSymbols[id].ptype, (Value){id});
+        {
+            ASTnode *head = NULL, *tail = NULL;
+
             scan(&CurrentToken);
+            // Match the syntax
             match(T_LPAREN, "(");
+
+            // Parse params
+            while (CurrentToken.type != T_RPAREN)
+            {
+                n = mkastbinary(A_GLUE, expression(), NULL, NO_VALUE);
+
+                if (head == NULL)
+                {
+                    head = tail = n;
+                }
+                else
+                {
+                    tail->right = n;
+                    tail = n;
+                }
+
+                if (CurrentToken.type == T_COMMA)
+                {
+                    match(T_COMMA, ",");
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // Match the syntax
             match(T_RPAREN, ")");
+
+            // Create the AST
+            n = mkastunary(A_CALL, head, (Value){id});
             break;
+        }
         }
         return n;
     case T_INTLIT:
@@ -163,7 +197,7 @@ static ASTnode *binary(int ptp)
     left = primary();
     // Check the token precedence if it is higher than the previous one
     tokentype = CurrentToken.type;
-    while (!(tokentype == T_RPAREN || tokentype == T_SEMICOLON || tokentype == T_COLON) && op_precedence(tokentype) > ptp)
+    while (!(tokentype == T_RPAREN || tokentype == T_SEMICOLON || tokentype == T_COLON || tokentype == T_COMMA) && op_precedence(tokentype) > ptp)
     {
         // Read next token
         scan(&CurrentToken);

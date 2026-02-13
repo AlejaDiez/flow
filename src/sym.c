@@ -22,7 +22,7 @@ int findglob(char *s)
 }
 
 // Add a new symbol to the global symbol table and return its index
-int addglob(char *name, SType stype, PType ptype)
+int addglob(char *name, SType stype, PType ptype, int numParams)
 {
     int y;
 
@@ -43,6 +43,7 @@ int addglob(char *name, SType stype, PType ptype)
     GlobalSymbols[y].name[MAX_LEN - 1] = '\0';
     GlobalSymbols[y].stype = stype;
     GlobalSymbols[y].ptype = ptype;
+    GlobalSymbols[y].numParams = numParams;
 
     return y;
 }
