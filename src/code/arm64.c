@@ -5,12 +5,11 @@
 #include "data.h"
 #include "decl.h"
 
-// Register names: 64-bit (x0-x3) and 32-bit (w0-w3)
-static char *reglist[4] = {"x0", "x1", "x2", "x3"};
-static char *wreglist[4] = {"w0", "w1", "w2", "w3"};
+static char *reglist[7] = {"x9", "x10", "x11", "x12", "x13", "x14", "x15"};
+static char *wreglist[7] = {"w9", "w10", "w11", "w12", "w13", "w14", "w15"};
 
 // Register availability flags (1 = free, 0 = used)
-static int freeregs[4];
+static int freeregs[7];
 
 // Global counter for generating unique label IDs (L1, L2...)
 static int label_count = 0;
@@ -52,12 +51,10 @@ static int arm64_alloc_register(void)
 // Write the assembly preamble
 static void arm64_preamble(void)
 {
-    arm64_freeall_registers();
-    fprintf(OutFile, "\t.global _main\n");
-    fprintf(OutFile, "\t.align 2\n");
     fprintf(OutFile, "\t.text\n");
-    fprintf(OutFile, "_main:\n");
-    // Save Frame Pointer (x29) and Link Register (x30) to stack
+    fprintf(OutFile, "\t.global _start\n");
+    fprintf(OutFile, "\t.align 2\n");
+    fprintf(OutFile, "_start:\n");
     fprintf(OutFile, "\tstp x29, x30, [sp, -16]!\n");
     fprintf(OutFile, "\tmov x29, sp\n");
 }
@@ -65,26 +62,36 @@ static void arm64_preamble(void)
 // Write the function epilogue
 static void arm64_postamble(void)
 {
-    fprintf(OutFile, "\tmov w0, #0\n");
-    fprintf(OutFile, "\tldp x29, x30, [sp], 16\n");
-    fprintf(OutFile, "\tret\n");
+    fprintf(OutFile, "\tmov x0, #0\n");
+    fprintf(OutFile, "\tmov x16, #1\n");
+    fprintf(OutFile, "\tsvc #0x80\n");
 }
 
 // Define the data section
 static void arm64_data_seg(void)
 {
     fprintf(OutFile, "\t.data\n");
-    // Format string for printf
-    fprintf(OutFile, "_.str:\n");
-    fprintf(OutFile, "\t.asciz \"%%ld\\n\"\n");
+
+    // Recorremos TODA la tabla de símbolos global
+    for (int i = 0; i < Globals; i++)
+    {
+        // Si es una VARIABLE (sea global o parámetro que finge ser global)
+        if (GlobalSymbols[i].stype == S_VARIABLE)
+        {
+            // Generamos la etiqueta .comm (Common Symbol)
+            // Formato macOS: .comm _nombre, tamaño, alineación
+            // El 3 significa alineación de 2^3 = 8 bytes (64 bits)
+            fprintf(OutFile, "\t.comm %s, 8, 3\n", GlobalSymbols[i].name);
+        }
+    }
 }
 
 // Generate a global symbol definition
 static void arm64_globsym(int id)
 {
-    int type = GlobalSymbols[id].type;
+    PType ptype = GlobalSymbols[id].ptype;
 
-    switch (type)
+    switch (ptype)
     {
     case P_INT:
         fprintf(OutFile, "\t.comm %s, 8, 3\n", GlobalSymbols[id].name);
@@ -108,6 +115,23 @@ static void arm64_genlabel(int l)
     fprintf(OutFile, "L%d:\n", l);
 }
 
+// Print a function preamble to the output file
+static void arm64_genfunlabel(int id)
+{
+    char *name = GlobalSymbols[id].name;
+
+    fprintf(OutFile, "_%s:\n", name);
+    fprintf(OutFile, "\tstp x29, x30, [sp, -16]!\n");
+    fprintf(OutFile, "\tmov x29, sp\n");
+}
+
+// Print a function postamble to the output file
+static void arm64_genfunend(void)
+{
+    fprintf(OutFile, "\tldp x29, x30, [sp], 16\n");
+    fprintf(OutFile, "\tret\n");
+}
+
 // Unconditional jump
 static void arm64_jump(int l)
 {
@@ -118,6 +142,60 @@ static void arm64_jump(int l)
 static void arm64_jump_cond(int r, int l)
 {
     fprintf(OutFile, "\tcbz %s, L%d\n", reglist[r], l);
+}
+
+// Call a function
+static int arm64_call(int id)
+{
+    int r = arm64_alloc_register();
+
+    fprintf(OutFile, "\tbl _%s\n", GlobalSymbols[id].name);
+    fprintf(OutFile, "\tmov %s, x0\n", reglist[r]);
+    return r;
+}
+
+// Load a param into a register
+static int arm64_loadparam(int id, int idx)
+{
+    PType ptype = GlobalSymbols[id].ptype;
+    int r = arm64_alloc_register();
+
+    fprintf(OutFile, "\tadrp %s, %s@PAGE\n", reglist[r], GlobalSymbols[id].name);
+    fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r], reglist[r], GlobalSymbols[id].name);
+
+    switch (ptype)
+    {
+    case P_INT:
+        fprintf(OutFile, "\tstr x%d, [%s]\n", idx, reglist[r]);
+        break;
+
+    case P_BOOL:
+        fprintf(OutFile, "\tstrb w%d, [%s]\n", idx, reglist[r]);
+        break;
+    }
+    return r;
+}
+
+// Store a param into a register
+static void arm64_storeparam(int r, int idx)
+{
+    if (idx < 8)
+    {
+        fprintf(OutFile, "\tmov x%d, %s\n", idx, reglist[r]);
+    }
+    else
+    {
+        fprintf(stderr, "Compiler Error: more than 8 arguments not supported yet\n");
+        exit(1);
+    }
+    arm64_free_register(r);
+}
+
+// Return a value
+static void arm64_return(int r)
+{
+    fprintf(OutFile, "\tmov x0, %s\n", reglist[r]);
+    arm64_free_register(r);
 }
 
 // MEMORY ACCESS
@@ -133,7 +211,7 @@ static int arm64_loadint(int v)
 // Load a global variable into a register
 static int arm64_loadglob(int id)
 {
-    int type = GlobalSymbols[id].type;
+    PType ptype = GlobalSymbols[id].ptype;
     int r = arm64_alloc_register();
 
     // Load address of the variable
@@ -141,7 +219,7 @@ static int arm64_loadglob(int id)
     fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r], reglist[r], GlobalSymbols[id].name);
 
     // Load value based on type
-    switch (type)
+    switch (ptype)
     {
     case P_INT:
         fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]);
@@ -154,9 +232,9 @@ static int arm64_loadglob(int id)
 }
 
 // Store a register value into a global variable
-static int arm64_storglob(int r, int id)
+static int arm64_storeglob(int r, int id)
 {
-    int type = GlobalSymbols[id].type;
+    PType ptype = GlobalSymbols[id].ptype;
     int r_addr = arm64_alloc_register();
 
     // Load address of the variable
@@ -164,7 +242,7 @@ static int arm64_storglob(int r, int id)
     fprintf(OutFile, "\tadd %s, %s, %s@PAGEOFF\n", reglist[r_addr], reglist[r_addr], GlobalSymbols[id].name);
 
     // Store value based on type
-    switch (type)
+    switch (ptype)
     {
     case P_INT:
         fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[r_addr]);
@@ -292,19 +370,67 @@ static int arm64_or(int r1, int r2)
 }
 
 // I/O
-// Print integer using C library printf
+// Print integer
 static void arm64_printint(int r)
 {
-    // Move value to print to stack
-    fprintf(OutFile, "\tstr %s, [sp]\n", reglist[r]);
+    int L_convert_loop = arm64_label();
+    int L_print_now = arm64_label();
 
-    // Load format string address into x0
-    fprintf(OutFile, "\tadrp x0, _.str@PAGE\n");
-    fprintf(OutFile, "\tadd x0, x0, _.str@PAGEOFF\n");
+    // 1. Preparar pila (32 bytes)
+    fprintf(OutFile, "\tsub sp, sp, #32\n");
 
-    // Call printf
-    fprintf(OutFile, "\tbl _printf\n");
+    // 2. Mover número a x13 (Registro temporal seguro fuera de reglist)
+    // CAMBIO: x9 -> x13
+    fprintf(OutFile, "\tmov x13, %s\n", reglist[r]);
 
+    // 3. Puntero al final del buffer (sp + 30)
+    // CAMBIO: x10 -> x14
+    fprintf(OutFile, "\tadd x14, sp, #30\n");
+
+    // 4. Poner salto de línea ('\n')
+    // CAMBIO: w11 -> w15
+    fprintf(OutFile, "\tmov w15, #10\n");
+    fprintf(OutFile, "\tstrb w15, [x14]\n");
+    fprintf(OutFile, "\tsub x14, x14, #1\n"); 
+
+    // 5. BUCLE DE CONVERSIÓN
+    arm64_genlabel(L_convert_loop);
+
+    // A. División y Módulo
+    // CAMBIO: x11 -> x15, x12 -> x16, x9 -> x13
+    fprintf(OutFile, "\tmov x15, #10\n");
+    fprintf(OutFile, "\tudiv x16, x13, x15\n");      
+    fprintf(OutFile, "\tmsub x17, x16, x15, x13\n"); // Resto en x17
+
+    // B. Convertir a ASCII y guardar
+    fprintf(OutFile, "\tadd x17, x17, #48\n"); 
+    fprintf(OutFile, "\tstrb w17, [x14]\n");   
+    fprintf(OutFile, "\tsub x14, x14, #1\n");  
+
+    // C. Actualizar el número y comprobar
+    fprintf(OutFile, "\tmov x13, x16\n"); 
+
+    // D. Condición
+    fprintf(OutFile, "\tcbnz x13, L%d\n", L_convert_loop);
+
+    // 6. IMPRIMIR (Syscall)
+    arm64_genlabel(L_print_now);
+
+    fprintf(OutFile, "\tadd x14, x14, #1\n");
+
+    // Calcular longitud
+    fprintf(OutFile, "\tadd x15, sp, #30\n"); 
+    fprintf(OutFile, "\tsub x2, x15, x14\n"); 
+    fprintf(OutFile, "\tadd x2, x2, #1\n");   
+
+    // Syscall Write
+    fprintf(OutFile, "\tmov x0, #1\n");  
+    fprintf(OutFile, "\tmov x1, x14\n"); // buffer address
+    fprintf(OutFile, "\tmov x16, #4\n"); 
+    fprintf(OutFile, "\tsvc #0x80\n");
+
+    // 7. Limpiar pila y liberar registro AST
+    fprintf(OutFile, "\tadd sp, sp, #32\n");
     arm64_free_register(r);
 }
 
@@ -319,11 +445,17 @@ struct Backend ARM64_Backend = {
     .globsym = arm64_globsym,
     .label = arm64_label,
     .genlabel = arm64_genlabel,
+    .genfunlabel = arm64_genfunlabel,
+    .genfunend = arm64_genfunend,
     .jump = arm64_jump,
     .jump_cond = arm64_jump_cond,
+    .call = arm64_call,
+    .loadparam = arm64_loadparam,
+    .storeparam = arm64_storeparam,
+    .ret = arm64_return,
     .loadint = arm64_loadint,
     .loadglob = arm64_loadglob,
-    .storglob = arm64_storglob,
+    .storeglob = arm64_storeglob,
     .add = arm64_add,
     .sub = arm64_sub,
     .neg = arm64_neg,

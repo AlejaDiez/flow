@@ -113,11 +113,56 @@ static ASTnode *primary(void)
         id = findglob(CurrentToken.value.string);
         if (id == -1)
         {
-            fprintf(stderr, "Syntax Error: undeclared variable '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
+            fprintf(stderr, "Syntax Error: undeclared identifier '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
             exit(1);
         }
-        n = mkastleaf(A_IDENT, GlobalSymbols[id].type, (Value){id});
-        scan(&CurrentToken);
+        switch (GlobalSymbols[id].stype)
+        {
+        case S_VARIABLE:
+            n = mkastleaf(A_IDENT, GlobalSymbols[id].ptype, (Value){id});
+            scan(&CurrentToken);
+            break;
+        case S_FUNCTION:
+        {
+            ASTnode *head = NULL, *tail = NULL;
+
+            scan(&CurrentToken);
+            // Match the syntax
+            match(T_LPAREN, "(");
+
+            // Parse params
+            while (CurrentToken.type != T_RPAREN)
+            {
+                n = mkastbinary(A_GLUE, expression(), NULL, NO_VALUE);
+
+                if (head == NULL)
+                {
+                    head = tail = n;
+                }
+                else
+                {
+                    tail->right = n;
+                    tail = n;
+                }
+
+                if (CurrentToken.type == T_COMMA)
+                {
+                    match(T_COMMA, ",");
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // Match the syntax
+            match(T_RPAREN, ")");
+
+            // Create the AST
+            n = mkastunary(A_CALL, head, (Value){id});
+            break;
+        }
+        }
         return n;
     case T_INTLIT:
         n = mkastleaf(A_INTLIT, P_INT, CurrentToken.value);
@@ -152,7 +197,7 @@ static ASTnode *binary(int ptp)
     left = primary();
     // Check the token precedence if it is higher than the previous one
     tokentype = CurrentToken.type;
-    while (!(tokentype == T_RPAREN || tokentype == T_SEMICOLON || tokentype == T_COLON) && op_precedence(tokentype) > ptp)
+    while (!(tokentype == T_RPAREN || tokentype == T_SEMICOLON || tokentype == T_COLON || tokentype == T_COMMA) && op_precedence(tokentype) > ptp)
     {
         // Read next token
         scan(&CurrentToken);

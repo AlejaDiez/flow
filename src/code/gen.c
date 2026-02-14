@@ -15,6 +15,7 @@ static struct
     int label_end;
 } control_stack[MAX_NESTED_CONTROLS];
 static int control_top = -1;
+static int current_fun = -1;
 
 // Control stack management, add a new control
 static void push_control(int type, int cont, int end)
@@ -137,7 +138,7 @@ static int cgAST(ASTnode *n)
         rightreg = cgAST(n->right);
         if (n->type == A_ASSIGN)
         {
-            return CG->storglob(rightreg, id);
+            return CG->storeglob(rightreg, id);
         }
         // L-Value
         leftreg = CG->loadglob(id);
@@ -171,7 +172,7 @@ static int cgAST(ASTnode *n)
             rightreg = NO_REG;
             break;
         }
-        return CG->storglob(rightreg, id);
+        return CG->storeglob(rightreg, id);
     // LITERALS
     case A_INTLIT:
         return CG->loadint(n->value.integer);
@@ -182,6 +183,55 @@ static int cgAST(ASTnode *n)
     case A_FALSE:
         return CG->loadint(0);
     // STATEMENTS
+    case A_FUNCTION:
+    {
+        int L_after = CG->label();
+        int L_end = CG->label();
+        int L_old = current_fun;
+
+        current_fun = L_end;
+
+        CG->jump(L_after);
+        CG->genfunlabel(n->value.integer);
+        // Load params
+        for (int i = 0; i < GlobalSymbols[n->value.integer].numParams; i++)
+        {
+            int r = CG->loadparam(GlobalSymbols[n->value.integer].params[i], i);
+
+            CG->free_register(r);
+        }
+        cgAST(n->left);
+        CG->genlabel(L_end);
+        CG->genfunend();
+        CG->genlabel(L_after);
+        current_fun = L_old;
+        return NO_REG;
+    }
+    case A_CALL:
+    {
+        ASTnode *argNode = n->left;
+        int argIdx = 0;
+
+        while (argNode != NULL)
+        {
+            int r = cgAST(argNode->left);
+
+            CG->storeparam(r, argIdx);
+
+            argNode = argNode->right;
+            argIdx++;
+        }
+        return CG->call(n->value.integer);
+    }
+    case A_RETURN:
+    {
+        if (n->left)
+        {
+            CG->ret(cgAST(n->left));
+        }
+        CG->jump(current_fun);
+        return NO_REG;
+    }
     case A_IFELSE:
     {
         int Lfalse, Lend;
@@ -262,7 +312,7 @@ static int cgAST(ASTnode *n)
 
             // Generate next label
             CG->genlabel(Lnext_check);
-            
+
             c = c->right;
         }
         // Generate end label
@@ -367,12 +417,15 @@ void gencode(ASTnode *n)
 {
     int reg;
 
+    CG->freeall_registers();
     CG->preamble();
+
     reg = cgAST(n);
     if (reg != NO_REG)
     {
         CG->free_register(reg);
     }
+
     CG->postamble();
     CG->data_seg();
 }

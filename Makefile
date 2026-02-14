@@ -24,16 +24,16 @@ run: ${TARGET}
 test: clean all
 	@:
 	@if [ -z "$(ARGS)" ]; then \
-		echo "Error: no test name provided, run using 'make test test_name'"; \
+		echo "Error: no test name provided, run using 'make test ARGS=test_name'"; \
 	else \
 		clear; \
 		./${TARGET} ./tests/$(ARGS).flow; \
 		if [ $$? -eq 0 ]; then \
-			gcc ./out.s -o ./out; \
-			rm -f ./out.s; \
+			as -o out.o out.s; \
+			ld -o out out.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64; \
 			if [ $$? -eq 0 ]; then \
 				./out; \
-				rm -f ./out; \
+				rm -f out.o out.s out; \
 			fi; \
 		fi; \
 	fi

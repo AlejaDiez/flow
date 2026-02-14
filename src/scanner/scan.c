@@ -146,6 +146,10 @@ static int keyword(char *s)
         {
             return T_FALSE;
         }
+        else if (!strcmp(s, "fun"))
+        {
+            return T_FUN;
+        }
         break;
     case 'i':
         if (!strcmp(s, "if"))
@@ -181,6 +185,12 @@ static int keyword(char *s)
             return T_PRINT;
         }
         break;
+    case 'r':
+        if (!strcmp(s, "return"))
+        {
+            return T_RETURN;
+        }
+        break;
     case 's':
         if (!strcmp(s, "stop"))
         {
@@ -197,6 +207,10 @@ static int keyword(char *s)
         if (!strcmp(s, "var"))
         {
             return T_VAR;
+        }
+        else if (!strcmp(s, "void"))
+        {
+            return T_VOID;
         }
         break;
     }
@@ -401,6 +415,10 @@ int scan(Token *t)
         break;
     case ';':
         t->type = T_SEMICOLON;
+        t->value = NO_VALUE;
+        break;
+    case ',':
+        t->type = T_COMMA;
         t->value = NO_VALUE;
         break;
     case '(':

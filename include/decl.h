@@ -20,6 +20,6 @@ int peek(void);
 
 // Sym Table
 int findglob(char *s);
-int addglob(char *name, PType ptype);
+int addglob(char *name, SType stype, PType ptype, int numParams);
 
 #endif

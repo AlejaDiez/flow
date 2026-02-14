@@ -6,7 +6,10 @@
 #include "data.h"
 #include "decl.h"
 
+static PType current_fun_type = P_VOID;
+
 static ASTnode *statement(void);
+static ASTnode *block_statement(void);
 
 // Required semicolon
 static ASTnode *semicolon(ASTnode *(*func)(void))
@@ -24,9 +27,9 @@ static ASTnode *var_declaration(void)
     ASTnode *n = NULL, *left, *right;
     int id;
     char name[MAX_LEN];
-    PType type;
+    PType ptype;
 
-    // Match the sintax
+    // Match the syntax
     match(T_VAR, "var");
     if (CurrentToken.type != T_IDENT)
     {
@@ -36,17 +39,18 @@ static ASTnode *var_declaration(void)
     // Copy the name of the variable
     strncpy(name, CurrentToken.value.string, MAX_LEN);
     scan(&CurrentToken);
-    // Match the sintax
+
+    // Match the syntax
     match(T_COLON, ":");
 
     // Parse type
     switch (CurrentToken.type)
     {
     case T_INT:
-        type = P_INT;
+        ptype = P_INT;
         break;
     case T_BOOL:
-        type = P_BOOL;
+        ptype = P_BOOL;
         break;
     default:
         fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
@@ -55,7 +59,7 @@ static ASTnode *var_declaration(void)
     scan(&CurrentToken);
 
     // Add the variable to the global symbol table
-    id = addglob(name, type);
+    id = addglob(name, S_VARIABLE, ptype, 0);
     genglobsym(id);
 
     // Try to initialize the variable
@@ -63,9 +67,140 @@ static ASTnode *var_declaration(void)
     {
         scan(&CurrentToken);
         right = expression();
-        left = mkastleaf(A_IDENT, type, (Value){id});
+        left = mkastleaf(A_IDENT, ptype, (Value){id});
         n = mkastbinary(A_ASSIGN, left, right, NO_VALUE);
     }
+    return n;
+}
+
+// Parse a variable declaration
+static ASTnode *function_declaration(void)
+{
+    ASTnode *n, *child;
+    int id;
+    char name[MAX_LEN];
+    PType prevptype = current_fun_type;
+    int paramsCount = 0;
+    int paramIDs[MAX_PARAMS];
+
+    // Match the syntax
+    match(T_FUN, "fun");
+    if (CurrentToken.type != T_IDENT)
+    {
+        fprintf(stderr, "Syntax Error: expected an identifier but found other token (%d:%d)\n", Line, Column);
+        exit(1);
+    }
+    // Copy the name of the variable
+    strncpy(name, CurrentToken.value.string, MAX_LEN);
+    scan(&CurrentToken);
+
+    // Match the syntax
+    match(T_LPAREN, "(");
+
+    // Parse params
+    while (CurrentToken.type != T_RPAREN)
+    {
+        int id;
+        char name[MAX_LEN];
+        PType ptype;
+
+        if (CurrentToken.type != T_IDENT)
+        {
+            fprintf(stderr, "Syntax Error: expected parameter name but found other token (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+
+        // Copy the name of the variable
+        strncpy(name, CurrentToken.value.string, MAX_LEN);
+        scan(&CurrentToken);
+
+        // Match the syntax
+        match(T_COLON, ":");
+
+        // Parse type
+        switch (CurrentToken.type)
+        {
+        case T_INT:
+            ptype = P_INT;
+            break;
+        case T_BOOL:
+            ptype = P_BOOL;
+            break;
+        default:
+            fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+        scan(&CurrentToken);
+
+        // Add the variable to the global symbol table
+        id = addglob(name, S_VARIABLE, ptype, 0);
+
+        // Link param wuth function
+        if (paramsCount < MAX_PARAMS)
+        {
+            paramIDs[paramsCount] = id;
+            paramsCount++;
+        }
+        else
+        {
+            fprintf(stderr, "Syntax Error: too many parameters (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+
+        // Match the syntax
+        if (CurrentToken.type == T_COMMA)
+        {
+            match(T_COMMA, ",");
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Match the syntax
+    match(T_RPAREN, ")");
+
+    // Parse type
+    if (CurrentToken.type == T_COLON)
+    {
+        match(T_COLON, ":");
+        switch (CurrentToken.type)
+        {
+        case T_VOID:
+            current_fun_type = P_VOID;
+            break;
+        case T_INT:
+            current_fun_type = P_INT;
+            break;
+        case T_BOOL:
+            current_fun_type = P_BOOL;
+            break;
+        default:
+            fprintf(stderr, "Syntax Error: expected a type but another token was found (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+        scan(&CurrentToken);
+    }
+    else
+    {
+        current_fun_type = P_VOID;
+    }
+
+    // Add the variable to the global symbol table
+    id = addglob(name, S_FUNCTION, current_fun_type, paramsCount);
+    for (int i = 0; i < paramsCount; i++)
+    {
+        GlobalSymbols[id].params[i] = paramIDs[i];
+    }
+
+    // Parse statement
+    child = statement();
+
+    current_fun_type = prevptype;
+
+    // Create the AST
+    n = mkastunary(A_FUNCTION, child, (Value){id});
     return n;
 }
 
@@ -91,10 +226,10 @@ static ASTnode *assignment_statement(void)
         exit(1);
     }
 
-    left = mkastleaf(A_IDENT, GlobalSymbols[id].type, (Value){id});
+    left = mkastleaf(A_IDENT, GlobalSymbols[id].ptype, (Value){id});
     scan(&CurrentToken);
 
-    // Match the sintax
+    // Match the syntax
     switch (CurrentToken.type)
     {
     case T_ASSIGN:
@@ -125,7 +260,7 @@ static ASTnode *assignment_statement(void)
         type = A_ASOR;
         break;
     default:
-        fprintf(stderr, "Syntax Error: Expected assignment operator\n");
+        fprintf(stderr, "Syntax Error: Expected assignment operator (%d:%d)\n", Line, Column);
         exit(1);
     }
     scan(&CurrentToken);
@@ -138,35 +273,100 @@ static ASTnode *assignment_statement(void)
     return n;
 }
 
-// Parse a block statement
-static ASTnode *block_statement(void)
+// Parse a call
+static ASTnode *call_statement(void)
 {
-    ASTnode *stmt, *seq = NULL;
+    int id;
+    ASTnode *n, *head = NULL, *tail = NULL;
 
-    // Match syntax
-    match(T_LBRACE, "{");
-
-    // Parse the statements
-    while (CurrentToken.type != T_RBRACE && CurrentToken.type != T_EOF)
+    // Match the syntax
+    if (CurrentToken.type != T_IDENT)
     {
-        stmt = statement();
+        fprintf(stderr, "Syntax Error: expected an identifier but found other token (%d:%d)\n", Line, Column);
+        exit(1);
+    }
 
-        if (stmt)
+    // Find the identifier in the global symbol table
+    id = findglob(CurrentToken.value.string);
+    if (id == -1)
+    {
+        fprintf(stderr, "Syntax Error: undeclared function '%s' (%d:%d)\n", CurrentToken.value.string, Line, Column);
+        exit(1);
+    }
+
+    scan(&CurrentToken);
+
+    // Match the syntax
+    match(T_LPAREN, "(");
+
+    // Parse params
+    while (CurrentToken.type != T_RPAREN)
+    {
+        n = mkastbinary(A_GLUE, expression(), NULL, NO_VALUE);
+
+        if (head == NULL)
         {
-            if (seq == NULL)
-            {
-                seq = stmt;
-            }
-            else
-            {
-                seq = mkastbinary(A_SEQ, seq, stmt, NO_VALUE);
-            }
+            head = tail = n;
+        }
+        else
+        {
+            tail->right = n;
+            tail = n;
+        }
+
+        if (CurrentToken.type == T_COMMA)
+        {
+            match(T_COMMA, ",");
+        }
+        else
+        {
+            break;
         }
     }
 
-    // Match syntax
-    match(T_RBRACE, "}");
-    return seq;
+    // Match the syntax
+    match(T_RPAREN, ")");
+
+    // Create the AST
+    n = mkastunary(A_CALL, head, (Value){id});
+    return n;
+}
+
+// Parse a return
+static ASTnode *return_statement(void)
+{
+    ASTnode *n = NULL;
+
+    // Match the syntax
+    match(T_RETURN, "return");
+
+    // Check for expression
+    if (CurrentToken.type != T_SEMICOLON)
+    {
+        n = expression();
+    }
+
+    // Check type
+    if (current_fun_type == P_VOID && n != NULL)
+    {
+        fprintf(stderr, "Type Error: function is void but returns a value (%d:%d)\n", Line, Column);
+        exit(1);
+    }
+    else if (current_fun_type != P_VOID && n == NULL)
+    {
+        fprintf(stderr, "Type Error: function expects a return value (%d:%d)\n", Line, Column);
+        exit(1);
+    }
+    else if (n != NULL && n->ptype != current_fun_type)
+    {
+        fprintf(stderr, "Type Error: incompatible return type, expected %d, got %d (%d:%d)\n",
+                current_fun_type, n->ptype, Line, Column);
+        exit(1);
+    }
+
+    // Create the AST
+    n = mkastunary(A_RETURN, n, NO_VALUE);
+    return n;
 }
 
 // Parse an if-else statement
@@ -244,7 +444,7 @@ static ASTnode *match_statement(void)
         body = statement();
 
         // Make new case
-        c = mkastternary(A_MATCH, val, body, NULL, NO_VALUE);
+        c = mkastternary(A_CASE, val, body, NULL, NO_VALUE);
 
         if (val == NULL)
         {
@@ -422,7 +622,7 @@ static ASTnode *print_statement(void)
     // Parse an expression
     expr = expression();
 
-    // Match the sintax
+    // Match the syntax
     match(T_RPAREN, ")");
     return mkastunary(A_PRINT, expr, NO_VALUE);
 }
@@ -433,9 +633,32 @@ static ASTnode *statement(void)
     switch (CurrentToken.type)
     {
     case T_IDENT:
-        return semicolon(assignment_statement);
+    {
+        int id = findglob(CurrentToken.value.string);
+
+        if (id == -1)
+        {
+            fprintf(stderr, "Syntax Error: undeclared identifier '%s' (%d:%d)", CurrentToken.value.string, Line, Column);
+            exit(1);
+        }
+        switch (GlobalSymbols[id].stype)
+        {
+        case S_VARIABLE:
+            return semicolon(assignment_statement);
+
+        case S_FUNCTION:
+            return semicolon(call_statement);
+        default:
+            fprintf(stderr, "Syntax Error: unexpected token (%d:%d)\n", Line, Column);
+            exit(1);
+        }
+    }
     case T_VAR:
         return semicolon(var_declaration);
+    case T_FUN:
+        return function_declaration();
+    case T_RETURN:
+        return semicolon(return_statement);
     case T_IF:
         return ifelse_statement();
     case T_MATCH:
@@ -454,6 +677,37 @@ static ASTnode *statement(void)
         fprintf(stderr, "Syntax Error: unexpected token (%d:%d)\n", Line, Column);
         exit(1);
     }
+}
+
+// Parse a block statement
+static ASTnode *block_statement(void)
+{
+    ASTnode *stmt, *seq = NULL;
+
+    // Match syntax
+    match(T_LBRACE, "{");
+
+    // Parse the statements
+    while (CurrentToken.type != T_RBRACE && CurrentToken.type != T_EOF)
+    {
+        stmt = statement();
+
+        if (stmt)
+        {
+            if (seq == NULL)
+            {
+                seq = stmt;
+            }
+            else
+            {
+                seq = mkastbinary(A_SEQ, seq, stmt, NO_VALUE);
+            }
+        }
+    }
+
+    // Match syntax
+    match(T_RBRACE, "}");
+    return seq;
 }
 
 // Parse multiple statements

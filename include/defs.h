@@ -3,6 +3,7 @@
 
 #define MAX_LEN 512
 #define MAX_SYM 256
+#define MAX_PARAMS 8
 #define NO_VALUE (Value){0}
 #define NO_REG -1
 #define NO_PRIM -1
@@ -61,10 +62,13 @@ typedef enum TokenType
     T_FALSE,
     T_UNDERSCORE,
     // Types
+    T_VOID,
     T_INT,
     T_BOOL,
     // Keywords
     T_VAR,
+    T_FUN,
+    T_RETURN,
     T_IF,
     T_ELSE,
     T_MATCH,
@@ -75,6 +79,7 @@ typedef enum TokenType
     // Punctuation
     T_COLON,
     T_SEMICOLON,
+    T_COMMA,
     // Gruping
     T_LPAREN,
     T_RPAREN,
@@ -127,14 +132,19 @@ typedef enum ASTnodeType
     A_TRUE,
     A_FALSE,
     // Statements
+    A_FUNCTION,
+    A_CALL,
+    A_RETURN,
     A_IFELSE,
     A_MATCH,
+    A_CASE,
     A_LOOP,
     A_STOP,
     A_NEXT,
     A_PRINT,
     // Grouping
-    A_SEQ
+    A_SEQ,
+    A_GLUE
 } ASTnodeType;
 
 typedef struct ASTnode
@@ -148,10 +158,19 @@ typedef struct ASTnode
 } ASTnode;
 
 // Symbol
+typedef enum SymType
+{
+    S_VARIABLE,
+    S_FUNCTION
+} SType;
+
 typedef struct SymTable
 {
     char name[MAX_LEN];
-    PType type;
+    SType stype;
+    PType ptype;
+    int numParams;
+    int params[MAX_PARAMS];
 } SymTable;
 
 // Code Generation
@@ -166,11 +185,17 @@ struct Backend
     void (*globsym)(int);
     int (*label)(void);
     void (*genlabel)(int);
+    void (*genfunlabel)(int);
+    void (*genfunend)(void);
     void (*jump)(int);
     void (*jump_cond)(int, int);
+    int (*call)(int);
+    int (*loadparam)(int, int);
+    void (*storeparam)(int, int);
+    void (*ret)(int);
     int (*loadint)(int);
     int (*loadglob)(int);
-    int (*storglob)(int, int);
+    int (*storeglob)(int, int);
     int (*add)(int, int);
     int (*sub)(int, int);
     int (*neg)(int);
