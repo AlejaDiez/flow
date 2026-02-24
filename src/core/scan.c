@@ -1,3 +1,13 @@
+/********************************************************************************
+ * File Name: src/core/scan.c                                                   *
+ *                                                                              *
+ * Description: Lexical Analyzer, converts the input character stream into a    *
+ *              stream of Tokens.                                               *
+ * Author: Alejandro Diez Bermejo                                               *
+ * Date: 2026-01-01                                                             *
+ * Version: 0.0.0                                                               *
+ ********************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,21 +17,31 @@
 #include "data.h"
 #include "decl.h"
 
-// Return the position of character c in string s, or -1 if not found
+/**
+ * Finds the position of a character in a string.
+ *
+ * @param s The string to search
+ * @param c The character to find
+ * @return Index of c in s, or -1 if not found.
+ */
 static int chrpos(char *s, int c)
 {
-    const char *p;
+    char *p;
 
     p = strchr(s, c);
     return (p ? p - s : -1);
 }
 
-// Putback a character that we don't need to deal with yet, return the old character
+/**
+ * Puts a character back into the input stream buffer.
+ *
+ * @param c The character to put back
+ * @return The previous putback character
+ */
 static int putback(int c)
 {
-    int old;
+    int old = Putback;
 
-    old = Putback;
     Putback = c;
     if (c == 0)
     {
@@ -34,41 +54,46 @@ static int putback(int c)
     return old;
 }
 
-// Get the next character from the input
+/**
+ * Gets the next character from the input stream.
+ *
+ * @return The next character or EOF.
+ */
 static int next(void)
 {
     int c;
 
-    // Check if we have a character to put back
-    if (Putback != 0)
+    if (Putback)
     {
-        c = putback(0); // Get from putback
+        c = putback(0);
     }
     else
     {
-        c = fgetc(InputFile); // Read from the input file
+        c = fgetc(InputFile);
     }
     Length++;
     return c;
 }
 
-// Skip any input that we don't need to deal with
+/**
+ * Skips whitespace, newlines, and comments.
+ *
+ * @return The first non-skippable character.
+ */
 static int skip(void)
 {
-    int c;
+    int c = next();
 
-    // Get the next character
-    c = next();
-    // Skip whitespace, newlines, tabs, comments, etc...
     while (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '#')
     {
         if (c == '#')
         {
-            // Skip the comment
+            // Skip comment until end of line
             while ((c = next()) != EOF && c != '\n')
-                ;
+            {
+            }
         }
-        // Check for newline to update line and column numbers
+
         if (c == '\n')
         {
             Line++;
@@ -76,55 +101,66 @@ static int skip(void)
         }
         Column++;
         Length = 0;
-        // Fetch the next character
         c = next();
     }
     return c;
 }
 
-// Scan an integer from the input
+/**
+ * Scans an integer literal.
+ *
+ * @param c The first digit of the integer
+ * @return The integer value
+ */
 static int scanint(int c)
 {
     int k, val = 0;
 
-    // Convert each character into an int value
-    while ((k = chrpos("0123456789", c)) != -1)
+    while ((k = chrpos("0123456789", c)) >= 0)
     {
         val = val * 10 + k;
         c = next();
     }
-    // We hit a character that isn't a digit, put it back
     putback(c);
     return val;
 }
 
-// Scan an identifier
+/**
+ * Scans an identifier or keyword.
+ *
+ * @param c The first character
+ * @param buf Buffer to store the string
+ * @param lim Buffer size limit
+ * @return Length of the identifier
+ */
 static int scanident(int c, char *buf, int lim)
 {
     int i = 0;
 
-    // Scan until we hit a character that isn't a letter, digit or underscore
     while (isalpha(c) || isdigit(c) || c == '_')
     {
-        if (lim - 1 == i)
-        {
-            fprintf(stderr, "Error: out of memory (%d:%d)\n", Line, Column);
-            exit(1);
-        }
-        else if (i < lim - 1)
+        if (i < lim - 1)
         {
             buf[i++] = c;
         }
+        else
+        {
+            fprintf(stderr, "Error: identifier too long at %d:%d\n", Line, Column);
+            exit(1);
+        }
         c = next();
     }
-    // Put back the character that stopped the loop
     putback(c);
     buf[i] = '\0';
-
     return i;
 }
 
-// Check if the identifier is a keyword and return the keyword token
+/**
+ * Checks if an identifier is a reserved keyword.
+ *
+ * @param s The identifier string
+ * @return The TokenType (keyword or T_IDENT)
+ */
 static int keyword(char *s)
 {
     switch (*s)
@@ -133,6 +169,12 @@ static int keyword(char *s)
         if (!strcmp(s, "bool"))
         {
             return T_BOOL;
+        }
+        break;
+    case 'c':
+        if (!strcmp(s, "const"))
+        {
+            return T_CONST;
         }
         break;
     case 'e':
@@ -146,7 +188,7 @@ static int keyword(char *s)
         {
             return T_FALSE;
         }
-        else if (!strcmp(s, "fun"))
+        if (!strcmp(s, "fun"))
         {
             return T_FUN;
         }
@@ -156,7 +198,7 @@ static int keyword(char *s)
         {
             return T_IF;
         }
-        else if (!strcmp(s, "int"))
+        if (!strcmp(s, "int"))
         {
             return T_INT;
         }
@@ -208,7 +250,7 @@ static int keyword(char *s)
         {
             return T_VAR;
         }
-        else if (!strcmp(s, "void"))
+        if (!strcmp(s, "void"))
         {
             return T_VOID;
         }
@@ -217,152 +259,157 @@ static int keyword(char *s)
     return T_IDENT;
 }
 
-// Scan the next token from the input, and put it in the Token structure
+/**
+ * Main scanning function.
+ *
+ * @param t Pointer to the Token structure to fill
+ * @return 1 if token found, 0 if EOF
+ */
 int scan(Token *t)
 {
     int c;
 
-    // Update the column number and reset the token length
+    // Advance column by the length of the previous token
     Column += Length;
     Length = 0;
-    // Skip whitespace, newlines, tabs, etc...
+
     c = skip();
-    // Determine the token based on the input
+
     switch (c)
     {
     case EOF:
         t->type = T_EOF;
-        t->value = NO_VALUE;
         return 0;
     case '+':
         if ((c = next()) == '=')
         {
             t->type = T_ASPLUS;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_PLUS;
-            t->value = NO_VALUE;
         }
         break;
     case '-':
         if ((c = next()) == '=')
         {
             t->type = T_ASMINUS;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_MINUS;
-            t->value = NO_VALUE;
         }
         break;
     case '*':
-        if ((c = next()) == '*')
+        if ((c = next()) == '=')
+        {
+            t->type = T_ASSTAR;
+        }
+        else if (c == '*')
         {
             if ((c = next()) == '=')
             {
                 t->type = T_ASDSTAR;
-                t->value = NO_VALUE;
             }
             else
             {
                 putback(c);
                 t->type = T_DSTAR;
-                t->value = NO_VALUE;
             }
-        }
-        else if (c == '=')
-        {
-            t->type = T_ASSTAR;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_STAR;
-            t->value = NO_VALUE;
         }
         break;
     case '/':
         if ((c = next()) == '=')
         {
             t->type = T_ASSLASH;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_SLASH;
-            t->value = NO_VALUE;
         }
         break;
     case '%':
         if ((c = next()) == '=')
         {
             t->type = T_ASPERCENT;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_PERCENT;
-            t->value = NO_VALUE;
         }
+        break;
+    case ';':
+        t->type = T_SEMICOLON;
+        break;
+    case ':':
+        t->type = T_COLON;
+        break;
+    case ',':
+        t->type = T_COMMA;
+        break;
+    case '(':
+        t->type = T_LPAREN;
+        break;
+    case ')':
+        t->type = T_RPAREN;
+        break;
+    case '{':
+        t->type = T_LBRACE;
+        break;
+    case '}':
+        t->type = T_RBRACE;
         break;
     case '=':
         if ((c = next()) == '=')
         {
             t->type = T_EQ;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_ASSIGN;
-            t->value = NO_VALUE;
-        }
-        break;
-    case '<':
-        if ((c = next()) == '=')
-        {
-            t->type = T_LE;
-            t->value = NO_VALUE;
-        }
-        else
-        {
-            putback(c);
-            t->type = T_LT;
-            t->value = NO_VALUE;
-        }
-        break;
-    case '>':
-        if ((c = next()) == '=')
-        {
-            t->type = T_GE;
-            t->value = NO_VALUE;
-        }
-        else
-        {
-            putback(c);
-            t->type = T_GT;
-            t->value = NO_VALUE;
         }
         break;
     case '!':
         if ((c = next()) == '=')
         {
             t->type = T_NEQ;
-            t->value = NO_VALUE;
         }
         else
         {
             putback(c);
             t->type = T_BANG;
-            t->value = NO_VALUE;
+        }
+        break;
+    case '<':
+        if ((c = next()) == '=')
+        {
+            t->type = T_LE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_LT;
+        }
+        break;
+    case '>':
+        if ((c = next()) == '=')
+        {
+            t->type = T_GE;
+        }
+        else
+        {
+            putback(c);
+            t->type = T_GT;
         }
         break;
     case '&':
@@ -371,19 +418,16 @@ int scan(Token *t)
             if ((c = next()) == '=')
             {
                 t->type = T_ASDAMPERSAND;
-                t->value = NO_VALUE;
             }
             else
             {
                 putback(c);
                 t->type = T_DAMPERSAND;
-                t->value = NO_VALUE;
             }
         }
         else
         {
-            putback(c);
-            fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
+            fprintf(stderr, "Syntax Error: unknown token '&' at %d:%d\n", Line, Column);
             exit(1);
         }
         break;
@@ -393,90 +437,66 @@ int scan(Token *t)
             if ((c = next()) == '=')
             {
                 t->type = T_ASDPIPE;
-                t->value = NO_VALUE;
             }
             else
             {
                 putback(c);
                 t->type = T_DPIPE;
-                t->value = NO_VALUE;
             }
         }
         else
         {
-            putback(c);
-            fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
+            fprintf(stderr, "Syntax Error: unknown token '|' at %d:%d\n", Line, Column);
             exit(1);
         }
         break;
-    case ':':
-        t->type = T_COLON;
-        t->value = NO_VALUE;
-        break;
-    case ';':
-        t->type = T_SEMICOLON;
-        t->value = NO_VALUE;
-        break;
-    case ',':
-        t->type = T_COMMA;
-        t->value = NO_VALUE;
-        break;
-    case '(':
-        t->type = T_LPAREN;
-        t->value = NO_VALUE;
-        break;
-    case ')':
-        t->type = T_RPAREN;
-        t->value = NO_VALUE;
-        break;
-    case '{':
-        t->type = T_LBRACE;
-        t->value = NO_VALUE;
-        break;
-    case '}':
-        t->type = T_RBRACE;
-        t->value = NO_VALUE;
-        break;
+
     default:
-        // If it's a digit, scan the integer literal
         if (isdigit(c))
         {
             t->type = T_INTLIT;
             t->value.integer = scanint(c);
-            break;
         }
-        // If it's a letter or underscore, scan the identifier
-        else if (isalpha(c) || '_' == c)
+        else if (isalpha(c) || c == '_')
         {
             char buffer[MAX_LEN];
 
-            scanident(c, buffer, MAX_LEN - 1);
-
+            scanident(c, buffer, MAX_LEN);
             if (strcmp(buffer, "_") == 0)
             {
                 t->type = T_UNDERSCORE;
-                t->value = NO_VALUE;
             }
             else
             {
-                int tokentype = keyword(buffer);
+                int type = keyword(buffer);
 
-                t->type = tokentype;
-                if (tokentype == T_IDENT)
+                t->type = type;
+                if (type == T_IDENT)
                 {
                     t->value.string = strdup(buffer);
                 }
+                else
+                {
+                    t->value.string = NULL;
+                }
             }
-            break;
         }
-        fprintf(stderr, "Syntax Error: unrecognized character '%c' (%d:%d)\n", c, Line, Column);
-        exit(1);
+        else
+        {
+            fprintf(stderr, "Syntax Error: unknown character '%c' at %d:%d\n", c, Line, Column);
+            exit(1);
+        }
+        break;
     }
     return 1;
 }
 
-// Check that the current token is 't', and fetch the next one.
-void match(TokenType t, char *what)
+/**
+ * Verifies the current token matches the expected type, advances the scanner if it matches.
+ *
+ * @param t Expected Token Type
+ */
+void match(TokenType t)
 {
     if (CurrentToken.type == t)
     {
@@ -484,36 +504,33 @@ void match(TokenType t, char *what)
     }
     else
     {
-        fprintf(stderr, "Syntax Error: expected %s but found other token (%d:%d)\n", what, Line, Column);
+        fprintf(stderr, "Syntax Error: expected '%s' but found '%s' at %d:%d\n",
+                TokenTypeStr[t], TokenTypeStr[CurrentToken.type], Line, Column);
         exit(1);
     }
 }
 
-// Look ahead in the input to see the next tokens without consuming them
-int peek(void)
+/**
+ * Looks ahead at the next token without consuming it.
+ *
+ * @return The TokenType of the next token.
+ */
+TokenType peek(void)
 {
     Token tmpToken;
-
-    // Save current state
-    struct
-    {
-        int putback;
-        int line;
-        int column;
-        int length;
-    } state = {Putback, Line, Column, Length};
     long pos = ftell(InputFile);
+    int oldPutback = Putback;
+    int oldLine = Line;
+    int oldCol = Column;
+    int oldLen = Length;
 
-    // Scan the next token
     scan(&tmpToken);
 
-    // Restore state
     fseek(InputFile, pos, SEEK_SET);
-    Putback = state.putback;
-    Line = state.line;
-    Column = state.column;
-    Length = state.length;
+    Putback = oldPutback;
+    Line = oldLine;
+    Column = oldCol;
+    Length = oldLen;
 
-    // Return the token
     return tmpToken.type;
 }

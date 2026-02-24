@@ -1,0 +1,22 @@
+# ======================================================================
+# 09 - Scoping
+# Description: Memory spaces and variable shadowing.
+# ======================================================================
+
+var x: int = 1;
+
+{
+    # This 'x' shadows the global 'x'
+    var x: int = 2;
+    print(x); # Expected: 2
+    
+    {
+        var x: int = 3;
+        print(x); # Expected: 3
+    }
+    
+    print(x); # Expected: 2
+}
+
+# Global 'x' remains unchanged
+print(x); # Expected: 1

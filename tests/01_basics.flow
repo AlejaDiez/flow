@@ -1,0 +1,14 @@
+# ======================================================================
+# 01 - Basics
+# Description: Demonstrates basic expressions, comments, and printing.
+# ======================================================================
+
+# This is a comment. The compiler ignores everything after the '#'
+
+# The print() function outputs the result of an integer expression.
+print(42);
+
+# Booleans are converted to their integer representations 
+# (true = 1, false = 0) when printed.
+print(true);
+print(false);
