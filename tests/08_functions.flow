@@ -1,0 +1,21 @@
+# ======================================================================
+# 08 - Functions
+# Description: Reusable subroutines and returning data.
+# ======================================================================
+
+# A function that takes two integers and returns an integer
+fun add(x: int, y: int): int {
+    return x + y;
+}
+
+# A function that returns void (no return value)
+fun greet() {
+    print(999); # Code for "Hello"
+}
+
+# Call the functions
+greet(); # Expected: 999
+
+var result: int = add(100, 50);
+
+print(result); # Expected: 150

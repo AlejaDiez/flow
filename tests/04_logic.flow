@@ -1,0 +1,21 @@
+# ======================================================================
+# 04 - Logic and Comparisons
+# Description: Relational algebra and boolean logic.
+# ======================================================================
+
+var a: int = 10;
+var b: int = 20;
+
+# Comparisons return a boolean (1 for true, 0 for false)
+print(a == b); # 0
+print(a != b); # 1
+print(a < b);  # 1
+print(a >= b); # 0
+
+# Logical AND (&&), OR (||), and NOT (!)
+var t: bool = true;
+var f: bool = false;
+
+print(t && f); # 0
+print(t || f); # 1
+print(!t);     # 0

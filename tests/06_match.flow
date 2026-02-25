@@ -1,0 +1,16 @@
+# ======================================================================
+# 06 - Match
+# Description: Advanced condition routing (switch/case alternative).
+# ======================================================================
+
+var error_code: int = 404;
+
+match (error_code) {
+    200: print(200);
+    400: print(400);
+    404: {
+        print(404); # Expected output: 3
+        # stop; # If it does not stop, the evaluation continues
+    }
+    _: print(0); # The underscore '_' is the default case
+}

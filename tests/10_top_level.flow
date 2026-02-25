@@ -1,0 +1,28 @@
+# ======================================================================
+# 10 - Top Level Execution
+# Description: Validates that functions can be defined seamlessly 
+#              alongside global statements.
+# ======================================================================
+
+# Start of script
+print(111);
+
+# Function definition is skipped automatically by the execution flow
+fun multiply(a: int, b: int): int {
+    fun mul(x: int): int {
+        return a * x;
+    }
+
+    return mul(b);
+}
+
+# Resume script execution
+print(222);
+
+# Call the function defined above
+print(multiply(5, 5)); # Expected: 25
+
+# Try to call the private function
+# print(mul(5)); # Error
+
+print(333);

@@ -1,0 +1,26 @@
+# ======================================================================
+# 05 - If-Else
+# Description: Branching based on conditions.
+# ======================================================================
+
+var age: int = 18;
+
+# Standard if-else statement
+if (age >= 18) {
+    # Expected output: 1 (Adult)
+    print(1);
+} else {
+    print(0);
+}
+
+# Nested if statements are also supported
+var score: int = 85;
+
+if (score > 50) {
+    if (score > 80) {
+        # Expected output: 2 (Great Score)
+        print(2);
+    } else {
+        print(1);
+    }
+}

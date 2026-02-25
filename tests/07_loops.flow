@@ -1,0 +1,25 @@
+# ======================================================================
+# 07 - Loops
+# Description: Iteration, breaking, and continuing.
+# ======================================================================
+
+# 1. While-style loop
+var i: int = 0;
+
+loop (i < 3) {
+    print(i); # Expected: 0, 1, 2
+    i += 1;
+}
+
+# 2. For-style loop with init, condition, and update
+loop (var i: int = 0; i < 5; i += 1) {
+    if (i == 2) {
+        # Skip the number 2
+        next;
+    }
+    if (i == 4) {
+        # Break out of the loop when hitting 4
+        stop;
+    }
+    print(i); # Expected: 0, 1, 3
+}

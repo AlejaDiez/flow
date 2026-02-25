@@ -1,0 +1,28 @@
+# ======================================================================
+# 02 - Variables and Constants
+# Description: Declaring and modifying state.
+# ======================================================================
+
+# Variables are declared using 'var', followed by the name, type, and value.
+var a: int = 10;
+
+print(a); # Expected: 10
+
+# Constants are declared using 'const'. They cannot be reassigned.
+const b: int = 20;
+
+print(b); # Expected: 20
+
+# We can reassign variables
+a = 30;
+print(a); # Expected: 30
+
+# We also support compound assignments
+a += 5;
+print(a); # Expected: 35
+
+a -= 10;
+print(a); # Expected: 25
+
+# We can't reassign constants
+# b = 10; # Error
