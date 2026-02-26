@@ -373,8 +373,17 @@ static int genAST(ASTnode *n)
         return NO_REG;
     }
     case A_RETURN:
-        CG->ret(n->left ? genAST(n->left) : NO_REG);
+    {
+        int reg = (n->left != NULL) ? genAST(n->left) : NO_REG;
+
+        CG->ret(reg);
+        if (reg != NO_REG)
+        {
+            CG->free_register(reg);
+        }
+        CG->postamble(n->value.symbol->size);
         return NO_REG;
+    }
     case A_CALL:
     {
         ASTnode *arg = n->left;

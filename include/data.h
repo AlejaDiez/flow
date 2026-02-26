@@ -28,7 +28,7 @@ extern_ Token CurrentToken; // The token currently being analyzed
 
 // Parser state
 extern_ Symbol *CurrentFunction; // The function that is currently being analyzed
-extern_ Control *CurrentControl; // The current 
+extern_ Control *CurrentControl; // The control that is currently being analyzed
 
 // Scope manager
 extern_ Scope *CurrentScope; // Points to the currently active scope

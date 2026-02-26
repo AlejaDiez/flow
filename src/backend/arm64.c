@@ -87,13 +87,14 @@ static void data_seg(void (*gen)(Symbol *), Symbol *sym)
 static void text_seg(int (*gen)(ASTnode *), ASTnode *node)
 {
     fprintf(OutFile, "\t.text\n");
-    fprintf(OutFile, "\t.global _start\n");
+    fprintf(OutFile, "\t.global _\n");
     fprintf(OutFile, "\t.align 2\n");
-    fprintf(OutFile, "_start:\n");
+    fprintf(OutFile, "_:\n");
     gen(node);
-    fprintf(OutFile, "\tmov x0, #0\n");  // Exit code 0
-    fprintf(OutFile, "\tmov x16, #1\n"); // Syscall Exit
-    fprintf(OutFile, "\tsvc #0x80\n");
+    fprintf(OutFile, "\tmov x0, #0\n");
+    fprintf(OutFile, "\tmov x16, #0x2000000\n");
+    fprintf(OutFile, "\tadd x16, x16, #1\n");
+    fprintf(OutFile, "\tsvc #0\n");
 }
 
 // Global variables
@@ -105,7 +106,7 @@ static void text_seg(int (*gen)(ASTnode *), ASTnode *node)
 static void globsym(Symbol *sym)
 {
     // .comm name, size, alignment
-    fprintf(OutFile, "\t.comm __%s, 8, 3\n", sym->name);
+    fprintf(OutFile, "\t.comm _%s, 8, 3\n", sym->name);
 }
 
 // Functions
@@ -116,7 +117,7 @@ static void globsym(Symbol *sym)
  */
 static void genfunlabel(char *name)
 {
-    fprintf(OutFile, "__%s:\n", name);
+    fprintf(OutFile, "_%s:\n", name);
 }
 
 /**
@@ -169,7 +170,7 @@ static void postamble(int stackSize)
  */
 static void call(char *name)
 {
-    fprintf(OutFile, "\tbl __%s\n", name);
+    fprintf(OutFile, "\tbl _%s\n", name);
 }
 
 /**
@@ -210,8 +211,8 @@ static int load_glob(Symbol *sym)
 {
     int r = alloc_register();
 
-    fprintf(OutFile, "\tadrp %s, __%s@PAGE\n", reglist[r], sym->name);
-    fprintf(OutFile, "\tadd %s, %s, __%s@PAGEOFF\n", reglist[r], reglist[r], sym->name);
+    fprintf(OutFile, "\tadrp %s, _%s@PAGE\n", reglist[r], sym->name);
+    fprintf(OutFile, "\tadd %s, %s, _%s@PAGEOFF\n", reglist[r], reglist[r], sym->name);
     fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]);
     return r;
 }
@@ -227,8 +228,8 @@ static int store_glob(int r, Symbol *sym)
 {
     int addr = alloc_register();
 
-    fprintf(OutFile, "\tadrp %s, __%s@PAGE\n", reglist[addr], sym->name);
-    fprintf(OutFile, "\tadd %s, %s, __%s@PAGEOFF\n", reglist[addr], reglist[addr], sym->name);
+    fprintf(OutFile, "\tadrp %s, _%s@PAGE\n", reglist[addr], sym->name);
+    fprintf(OutFile, "\tadd %s, %s, _%s@PAGEOFF\n", reglist[addr], reglist[addr], sym->name);
     fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[addr]);
     free_register(addr);
     return r;
@@ -602,10 +603,11 @@ static void print(int r)
     fprintf(OutFile, "\tadd x2, x2, #1\n");
 
     // Syscall Write (macOS/Linux AArch64)
-    fprintf(OutFile, "\tmov x0, #1\n");  // Descriptor de archivo 1 (stdout)
-    fprintf(OutFile, "\tmov x1, x14\n"); // Puntero al buffer
-    fprintf(OutFile, "\tmov x16, #4\n"); // Número de syscall (write)
-    fprintf(OutFile, "\tsvc #0x80\n");   // Llamada al sistema
+    fprintf(OutFile, "\tmov x0, #1\n");          // Descriptor de archivo 1 (stdout)
+    fprintf(OutFile, "\tmov x1, x14\n");         // Puntero al buffer
+    fprintf(OutFile, "\tmov x16, #0x2000000\n"); // Clase base POSIX macOS
+    fprintf(OutFile, "\tadd x16, x16, #4\n");    // + 4 (write)
+    fprintf(OutFile, "\tsvc #0\n");              // Interrupción nativa ARM64
 
     // 9. Limpiar pila (No liberamos registro porque gen.c lo hace)
     fprintf(OutFile, "\tadd sp, sp, #32\n");
