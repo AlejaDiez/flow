@@ -91,10 +91,14 @@ static void text_seg(int (*gen)(ASTnode *), ASTnode *node)
     fprintf(OutFile, "\t.align 2\n");
     fprintf(OutFile, "_:\n");
     gen(node);
-    fprintf(OutFile, "\tmov x0, #0\n");
+#ifdef __APPLE__
     fprintf(OutFile, "\tmov x16, #0x2000000\n");
     fprintf(OutFile, "\tadd x16, x16, #1\n");
     fprintf(OutFile, "\tsvc #0\n");
+#else
+    fprintf(OutFile, "\tmov x8, #93\n");
+    fprintf(OutFile, "\tsvc #0\n");
+#endif
 }
 
 // Global variables
@@ -603,11 +607,16 @@ static void print(int r)
     fprintf(OutFile, "\tadd x2, x2, #1\n");
 
     // Syscall Write (macOS/Linux AArch64)
-    fprintf(OutFile, "\tmov x0, #1\n");          // Descriptor de archivo 1 (stdout)
-    fprintf(OutFile, "\tmov x1, x14\n");         // Puntero al buffer
+    fprintf(OutFile, "\tmov x0, #1\n");  // Descriptor de archivo 1 (stdout)
+    fprintf(OutFile, "\tmov x1, x14\n"); // Puntero al buffer
+#ifdef __APPLE__
     fprintf(OutFile, "\tmov x16, #0x2000000\n"); // Clase base POSIX macOS
     fprintf(OutFile, "\tadd x16, x16, #4\n");    // + 4 (write)
     fprintf(OutFile, "\tsvc #0\n");              // Interrupción nativa ARM64
+#else
+    fprintf(OutFile, "\tmov x8, #64\n"); // 64 es syscall de write en Linux AArch64
+    fprintf(OutFile, "\tsvc #0\n");
+#endif
 
     // 9. Limpiar pila (No liberamos registro porque gen.c lo hace)
     fprintf(OutFile, "\tadd sp, sp, #32\n");
