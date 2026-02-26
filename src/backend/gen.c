@@ -387,15 +387,19 @@ static int genAST(ASTnode *n)
     case A_CALL:
     {
         ASTnode *arg = n->left;
+        int regs[8];
         int idx = 0;
 
         while (arg)
         {
-            int val = genAST(arg->left);
-
-            CG->load_arg(val, idx++);
-            CG->free_register(val);
+            regs[idx] = genAST(arg->left);
+            idx++;
             arg = arg->right;
+        }
+        // Load args
+        for (int i = 0; i < idx; i++) {
+            CG->load_arg(regs[i], i);
+            CG->free_register(regs[i]);
         }
 
         int r = CG->alloc_register();
