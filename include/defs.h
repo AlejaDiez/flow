@@ -318,9 +318,9 @@ typedef struct Backend
     int (*load_int)(int);
     int (*load_glob)(Symbol *);
     int (*store_glob)(int, Symbol *);
-    int (*load_local)(int);
-    int (*store_local)(int, int);
-    void (*store_param)(int, int);
+    int (*load_local)(Symbol *);
+    int (*store_local)(int, Symbol *);
+    void (*store_param)(int, Symbol *);
     void (*load_arg)(int, int);
     void (*store_result)(int);
     // Control flow

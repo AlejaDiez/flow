@@ -30,10 +30,10 @@ test: clean all
 		./${TARGET} ./tests/$(ARGS).flow; \
 		if [ $$? -eq 0 ]; then \
 			as -o out.o out.s; \
-			ld -o out out.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64; \
+			ld -o out out.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _ -arch arm64; \
 			if [ $$? -eq 0 ]; then \
 				./out; \
-				rm -f out.o out.s out; \
+				rm -f out.o out; \
 			fi; \
 		fi; \
 	fi

@@ -332,19 +332,14 @@ ASTnode *single_statement(void)
     case T_LOOP:
         return loop_statement();
     case T_RETURN:
+    {
         scan(&CurrentToken);
-        if (CurrentToken.type == T_SEMICOLON)
-        {
-            scan(&CurrentToken);
-            return mkastunary(A_RETURN, NULL, NO_VALUE);
-        }
-        else
-        {
-            ASTnode *expr = expression();
 
-            match(T_SEMICOLON);
-            return mkastunary(A_RETURN, expr, NO_VALUE);
-        }
+        ASTnode *expr = CurrentToken.type != T_SEMICOLON ? expression() : NULL;
+
+        match(T_SEMICOLON);
+        return mkastunary(A_RETURN, expr, (Value){.symbol = CurrentFunction});
+    }
     case T_STOP:
         scan(&CurrentToken);
         match(T_SEMICOLON);

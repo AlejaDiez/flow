@@ -100,7 +100,7 @@ static int load_var(Symbol *sym)
     }
     else
     {
-        return CG->load_local(sym->offset);
+        return CG->load_local(sym);
     }
 }
 
@@ -119,7 +119,7 @@ static int store_var(int reg, Symbol *sym)
     }
     else
     {
-        return CG->store_local(reg, sym->offset);
+        return CG->store_local(reg, sym);
     }
 }
 
@@ -360,7 +360,7 @@ static int genAST(ASTnode *n)
         // Ensure we only loop up to the number of parameters to avoid grabbing local scope variables
         while (param != NULL && idx < n->value.symbol->numParams)
         {
-            CG->store_param(idx, param->offset);
+            CG->store_param(idx, param);
             param = param->next;
             idx++;
         }
@@ -373,20 +373,34 @@ static int genAST(ASTnode *n)
         return NO_REG;
     }
     case A_RETURN:
-        CG->ret(n->left ? genAST(n->left) : NO_REG);
+    {
+        int reg = (n->left != NULL) ? genAST(n->left) : NO_REG;
+
+        CG->ret(reg);
+        if (reg != NO_REG)
+        {
+            CG->free_register(reg);
+        }
+        CG->postamble(n->value.symbol->size);
         return NO_REG;
+    }
     case A_CALL:
     {
         ASTnode *arg = n->left;
+        int regs[8];
         int idx = 0;
 
         while (arg)
         {
-            int val = genAST(arg->left);
-
-            CG->load_arg(val, idx++);
-            CG->free_register(val);
+            regs[idx] = genAST(arg->left);
+            idx++;
             arg = arg->right;
+        }
+        // Load args
+        for (int i = 0; i < idx; i++)
+        {
+            CG->load_arg(regs[i], i);
+            CG->free_register(regs[i]);
         }
 
         int r = CG->alloc_register();
