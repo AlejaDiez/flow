@@ -177,7 +177,21 @@ Symbol *addsymbol(char *name, SType stype, PType ptype)
     // Constants and variables
     if (stype == S_CONSTANT || stype == S_VARIABLE)
     {
-        sym->size = 8;
+        switch (ptype)
+        {
+        case P_VOID:
+            fprintf(stderr, "Type Error: variables or constants cannot be of type 'void' at %d:%d\n", Line, Column);
+            exit(1);
+        case P_BOOL:
+            sym->size = 1; // 1 byte (8 bits)
+            break;
+        case P_INT:
+            sym->size = 4; // 4 bytes (32 bits)
+            break;
+        default:
+            sym->size = 8; // 8 bytes (64 bits)
+            break;
+        }
 
         if (is_global_scope())
         {
@@ -187,8 +201,10 @@ Symbol *addsymbol(char *name, SType stype, PType ptype)
         else
         {
             sym->sclass = C_LOCAL;
+
             // Allocate space in the Stack Frame
             LocalOffset -= sym->size;
+            LocalOffset = LocalOffset & ~(sym->size - 1);
             sym->offset = LocalOffset;
         }
     }

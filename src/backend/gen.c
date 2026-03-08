@@ -100,7 +100,7 @@ static int load_var(Symbol *sym)
     }
     else
     {
-        return CG->load_local(sym->offset);
+        return CG->load_local(sym);
     }
 }
 
@@ -119,7 +119,7 @@ static int store_var(int reg, Symbol *sym)
     }
     else
     {
-        return CG->store_local(reg, sym->offset);
+        return CG->store_local(reg, sym);
     }
 }
 
@@ -360,7 +360,7 @@ static int genAST(ASTnode *n)
         // Ensure we only loop up to the number of parameters to avoid grabbing local scope variables
         while (param != NULL && idx < n->value.symbol->numParams)
         {
-            CG->store_param(idx, param->offset);
+            CG->store_param(idx, param);
             param = param->next;
             idx++;
         }
@@ -397,7 +397,8 @@ static int genAST(ASTnode *n)
             arg = arg->right;
         }
         // Load args
-        for (int i = 0; i < idx; i++) {
+        for (int i = 0; i < idx; i++)
+        {
             CG->load_arg(regs[i], i);
             CG->free_register(regs[i]);
         }

@@ -109,8 +109,10 @@ static void text_seg(int (*gen)(ASTnode *), ASTnode *node)
  */
 static void globsym(Symbol *sym)
 {
+    int align = (sym->size == 1) ? 0 : ((sym->size == 4) ? 2 : 3);
+
     // .comm name, size, alignment
-    fprintf(OutFile, "\t.comm _%s, 8, 3\n", sym->name);
+    fprintf(OutFile, "\t.comm _%s, %d, %d\n", sym->name, sym->size, align);
 }
 
 // Functions
@@ -217,7 +219,18 @@ static int load_glob(Symbol *sym)
 
     fprintf(OutFile, "\tadrp %s, _%s@PAGE\n", reglist[r], sym->name);
     fprintf(OutFile, "\tadd %s, %s, _%s@PAGEOFF\n", reglist[r], reglist[r], sym->name);
-    fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]);
+    switch (sym->size)
+    {
+    case 1:
+        fprintf(OutFile, "\tldrb %s, [%s]\n", wreglist[r], reglist[r]); // 1 Byte
+        break;
+    case 4:
+        fprintf(OutFile, "\tldrsw %s, [%s]\n", reglist[r], reglist[r]); // 4 Bytes
+        break;
+    default:
+        fprintf(OutFile, "\tldr %s, [%s]\n", reglist[r], reglist[r]); // 8 Bytes
+        break;
+    }
     return r;
 }
 
@@ -234,7 +247,18 @@ static int store_glob(int r, Symbol *sym)
 
     fprintf(OutFile, "\tadrp %s, _%s@PAGE\n", reglist[addr], sym->name);
     fprintf(OutFile, "\tadd %s, %s, _%s@PAGEOFF\n", reglist[addr], reglist[addr], sym->name);
-    fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[addr]);
+    switch (sym->size)
+    {
+    case 1:
+        fprintf(OutFile, "\tstrb %s, [%s]\n", wreglist[r], reglist[addr]); // 1 Byte
+        break;
+    case 4:
+        fprintf(OutFile, "\tstr %s, [%s]\n", wreglist[r], reglist[addr]); // 4 Bytes
+        break;
+    default:
+        fprintf(OutFile, "\tstr %s, [%s]\n", reglist[r], reglist[addr]); // 8 Bytes
+        break;
+    }
     free_register(addr);
     return r;
 }
@@ -242,14 +266,25 @@ static int store_glob(int r, Symbol *sym)
 /**
  * Loads a local variable from the stack into a register.
  *
- * @param offset The negative offset from the Frame Pointer (x29)
+ * @param sym Pointer to the symbol representing the local variable
  * @return The index of the register containing the local variable
  */
-static int load_local(int offset)
+static int load_local(Symbol *sym)
 {
     int r = alloc_register();
 
-    fprintf(OutFile, "\tldr %s, [x29, #%d]\n", reglist[r], offset);
+    switch (sym->size)
+    {
+    case 1:
+        fprintf(OutFile, "\tldrb %s, [x29, #%d]\n", wreglist[r], sym->offset); // 1 Byte
+        break;
+    case 4:
+        fprintf(OutFile, "\tldrsw %s, [x29, #%d]\n", reglist[r], sym->offset); // 4 Bytes
+        break;
+    default:
+        fprintf(OutFile, "\tldr %s, [x29, #%d]\n", reglist[r], sym->offset); // 8 Bytes
+        break;
+    }
     return r;
 }
 
@@ -257,12 +292,23 @@ static int load_local(int offset)
  * Stores a register's value into a local variable's stack slot.
  *
  * @param r The index of the register holding the value
- * @param offset The stack offset relative to the Frame Pointer (x29)
+ * @param sym Pointer to the destination symbol
  * @return The index of the source register
  */
-static int store_local(int r, int offset)
+static int store_local(int r, Symbol *sym)
 {
-    fprintf(OutFile, "\tstr %s, [x29, #%d]\n", reglist[r], offset);
+    switch (sym->size)
+    {
+    case 1:
+        fprintf(OutFile, "\tstrb %s, [x29, #%d]\n", wreglist[r], sym->offset); // 1 Byte
+        break;
+    case 4:
+        fprintf(OutFile, "\tstr %s, [x29, #%d]\n", wreglist[r], sym->offset); // 4 Bytes
+        break;
+    default:
+        fprintf(OutFile, "\tstr %s, [x29, #%d]\n", reglist[r], sym->offset); // 8 Bytes
+        break;
+    }
     return r;
 }
 
@@ -270,18 +316,27 @@ static int store_local(int r, int offset)
  * Saves incoming function arguments (x0-x7) to their assigned stack slots, this is typically used during the function prologue.
  *
  * @param idx The argument index (0-7)
- * @param offset The stack offset where the parameter should be stored
+ * @param sym Pointer to the symbol representing the parameter
  */
-static void store_param(int idx, int offset)
+static void store_param(int idx, Symbol *sym)
 {
-    if (idx < 8)
+    if (idx >= 8)
     {
-        fprintf(OutFile, "\tstr x%d, [x29, #%d]\n", idx, offset);
-    }
-    else
-    {
+
         fprintf(stderr, "Error: +8 params not supported\n");
         exit(1);
+    }
+    switch (sym->size)
+    {
+    case 1:
+        fprintf(OutFile, "\tstrb w%d, [x29, #%d]\n", idx, sym->offset); // 1 Byte
+        break;
+    case 4:
+        fprintf(OutFile, "\tstr w%d, [x29, #%d]\n", idx, sym->offset); // 4 Bytes
+        break;
+    default:
+        fprintf(OutFile, "\tstr x%d, [x29, #%d]\n", idx, sym->offset); // 8 Bytes
+        break;
     }
 }
 
