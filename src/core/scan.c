@@ -107,15 +107,55 @@ static int skip(void)
 }
 
 /**
+ * Scans an identifier or keyword.
+ *
+ * @return Dynamically allocated identifier
+ */
+static char *scanident()
+{
+    int c, capacity = 128, len = 0;
+    char *buf = (char *)malloc(capacity);
+
+    if (buf == NULL)
+    {
+        fprintf(stderr, "Fatal Error: out of memory\n");
+        exit(1);
+    }
+
+    c = next();
+    while (isalpha(c) || isdigit(c) || c == '_')
+    {
+        if (len >= capacity - 1)
+        {
+            capacity *= 2;
+            buf = (char *)realloc(buf, capacity);
+
+            if (buf == NULL)
+            {
+                fprintf(stderr, "Fatal Error: out of memory\n");
+                exit(1);
+            }
+        }
+        buf[len++] = c;
+        c = next();
+    }
+    putback(c);
+
+    buf[len] = '\0';
+    buf = (char *)realloc(buf, len + 1);
+    return buf;
+}
+
+/**
  * Scans an integer literal.
  *
- * @param c The first digit of the integer
  * @return The integer value
  */
-static int scanint(int c)
+static int scanint(void)
 {
-    int k, val = 0;
+    int c, k, val = 0;
 
+    c = next();
     while ((k = chrpos("0123456789", c)) >= 0)
     {
         val = val * 10 + k;
@@ -126,33 +166,48 @@ static int scanint(int c)
 }
 
 /**
- * Scans an identifier or keyword.
+ * Scans a string literal.
  *
- * @param c The first character
- * @param buf Buffer to store the string
- * @param lim Buffer size limit
- * @return Length of the identifier
+ * @return Dynamically allocated string
  */
-static int scanident(int c, char *buf, int lim)
+static char *scanstring(void)
 {
-    int i = 0;
+    int c, capacity = 128, len = 0;
+    char *buf = (char *)malloc(capacity);
 
-    while (isalpha(c) || isdigit(c) || c == '_')
+    if (buf == NULL)
     {
-        if (i < lim - 1)
+        fprintf(stderr, "Fatal Error: out of memory\n");
+        exit(1);
+    }
+
+    c = next();
+    while (c != '"' && c != '\n' && c != EOF)
+    {
+        if (len >= capacity - 1)
         {
-            buf[i++] = c;
+            capacity *= 2;
+            buf = (char *)realloc(buf, capacity);
+
+            if (buf == NULL)
+            {
+                fprintf(stderr, "Fatal Error: out of memory\n");
+                exit(1);
+            }
         }
-        else
-        {
-            fprintf(stderr, "Error: identifier too long at %d:%d\n", Line, Column);
-            exit(1);
-        }
+        buf[len++] = c;
         c = next();
     }
-    putback(c);
-    buf[i] = '\0';
-    return i;
+
+    if (c != '"')
+    {
+        fprintf(stderr, "Syntax Error: unterminated string literal at %d:%d\n", Line, Column);
+        exit(1);
+    }
+
+    buf[len] = '\0';
+    buf = (char *)realloc(buf, len + 1);
+    return buf;
 }
 
 /**
@@ -450,34 +505,39 @@ int scan(Token *t)
             exit(1);
         }
         break;
-
     default:
         if (isdigit(c))
         {
+            putback(c);
             t->type = T_INTLIT;
-            t->value.integer = scanint(c);
+            t->value.integer = scanint();
+        }
+        else if (c == '"')
+        {
+            t->type = T_STRLIT;
+            t->value.string = scanstring();
         }
         else if (isalpha(c) || c == '_')
         {
-            char buffer[MAX_LEN];
+            putback(c);
 
-            scanident(c, buffer, MAX_LEN);
-            if (strcmp(buffer, "_") == 0)
+            char *str = scanident();
+
+            if (strcmp(str, "_") == 0)
             {
                 t->type = T_UNDERSCORE;
             }
             else
             {
-                int type = keyword(buffer);
-
-                t->type = type;
-                if (type == T_IDENT)
+                t->type = keyword(str);
+                if (t->type == T_IDENT)
                 {
-                    t->value.string = strdup(buffer);
+                    t->value.string = str;
                 }
                 else
                 {
                     t->value.string = NULL;
+                    free(str);
                 }
             }
         }

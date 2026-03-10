@@ -58,6 +58,7 @@ typedef enum TokenType
     // Literals and Identifiers
     T_IDENT,
     T_INTLIT,
+    T_STRLIT,
     T_TRUE,
     T_FALSE,
     T_UNDERSCORE,
@@ -66,6 +67,7 @@ typedef enum TokenType
     T_VOID,
     T_INT,
     T_BOOL,
+    T_STRING,
 
     // Keywords
     T_CONST,
@@ -88,7 +90,6 @@ typedef enum TokenType
     T_RPAREN,
     T_LBRACE,
     T_RBRACE
-
 } TokenType;
 
 // Token types strings
@@ -125,6 +126,7 @@ static const char *const TokenTypeStr[] = {
     // Literals and Identifiers
     "identifier",
     "integer",
+    "string",
     "true",
     "false",
     "_",
@@ -132,6 +134,7 @@ static const char *const TokenTypeStr[] = {
     "void",
     "int",
     "bool",
+    "string",
     // Keywords
     "const",
     "var",
@@ -158,7 +161,8 @@ typedef enum PType
 {
     P_VOID,
     P_INT,
-    P_BOOL
+    P_BOOL,
+    P_STRING
 } PType;
 
 // Abstract Syntax Tree node types
@@ -201,6 +205,7 @@ typedef enum ASTnodeType
     // Leaves
     A_IDENT,
     A_INTLIT,
+    A_STRLIT,
     A_TRUE,
     A_FALSE,
 
